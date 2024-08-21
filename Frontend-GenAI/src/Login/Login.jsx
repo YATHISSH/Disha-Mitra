@@ -2,6 +2,7 @@ import { useForm } from 'react-hook-form';
 import * as yup from 'yup';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Link, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 // Validation schema using Yup
 const schema = yup.object().shape({
@@ -20,17 +21,13 @@ const Login = () => {
 
   const { register, handleSubmit, formState: { errors } } = useForm({
     resolver: yupResolver(schema),
-    defaultValues: {
-      email: 'yathissh@gmail.com',
-      password: 'YTB_ytb@123',
-    },
   });
 
-  const onSubmit = (data) => {
-    if (data.email === 'yathissh@gmail.com' && data.password === 'YTB_ytb@123') {
-      navigate('/chatbot');
-    } else {
-      alert('Invalid email or password');
+  const onSubmit = async (data) => {
+    const response = await axios.post("http://localhost:3001/auth/login",{email:data.email,password:data.password});
+    console.log(response);
+    if(response.data.error==0){
+      navigate("/chatbot");
     }
   };
 

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { AiOutlineUser } from "react-icons/ai";
 import { FiMail } from "react-icons/fi";
 import { RiLockPasswordLine } from "react-icons/ri";
@@ -20,22 +21,24 @@ const schema = yup.object().shape({
   confirmPassword: yup.string()
     .oneOf([yup.ref('password'), null], 'Passwords must match')
     .required('Confirm password is required'),
-  Citytown: yup.string().required('City/Town is required'),
-  pincode: yup.string()
-    .matches(/^\d{6}$/, 'Pincode must be exactly 6 digits')
-    .required('Pincode is required'),
 });
 
 const SignUp = () => {
   const navigate = useNavigate();
-
+  const [serverError, setServerError] = useState(null);
+  const [loading, setLoading] = useState(false);
+  
   const { register, handleSubmit, formState: { errors } } = useForm({
     resolver: yupResolver(schema),
   });
 
   const onSubmit = async (data) => {
+    console.log("Form Data Submitted:", data);
+
+    setLoading(true);
+    setServerError(null);
     try {
-      const response = await fetch('http://localhost:5000/api/signup', {
+      const response = await fetch('http://localhost:3001/auth/signup', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -49,14 +52,16 @@ const SignUp = () => {
       } else {
         const { errorType, message } = await response.json();
         if (errorType === 'emailExists') {
-          alert(message);
+          setServerError(message);
         } else {
-          console.error(message);
+          setServerError('An error occurred. Please try again.');
         }
       }
     } catch (error) {
       console.error('Error during sign up:', error);
-      alert('Internal server error');
+      setServerError('Internal server error');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -107,7 +112,7 @@ const SignUp = () => {
           </div>
 
           <div className="inputBox">
-          <RiLockPasswordLine className='icon' />
+            <RiLockPasswordLine className='icon' />
             <input
               type="password"
               name="confirmPassword"
@@ -118,10 +123,13 @@ const SignUp = () => {
             />
             {errors.confirmPassword && <p className="text-red-500 text-sm mt-1">{errors.confirmPassword.message}</p>}
           </div>
+          {/* Server error display */}
+          {serverError && <p className="text-red-500 text-center mt-4">{serverError}</p>}
 
+          {/* Submit Button */}
           <div className='divBtn'>
-            <button type="submit" className='loginBtn w-full py-3 bg-[#bd4b37] hover:bg-[#9c3f30] text-white font-semibold rounded-lg transition duration-300 ease-in-out transform hover:scale-105 hover:shadow-lg'>
-              SIGN UP
+            <button type="submit" className='loginBtn w-full py-3 bg-[#bd4b37] hover:bg-[#9c3f30] text-white font-semibold rounded-lg transition duration-300 ease-in-out transform hover:scale-105 hover:shadow-lg' disabled={loading}>
+              {loading ? 'Signing Up...' : 'SIGN UP'}
             </button>
           </div>
         </form>
