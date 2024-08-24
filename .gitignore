@@ -12,7 +12,3 @@ __pycache__/
 /YTB
 Scripts/
 Lib/
-
-# Project-specific directories
-genai/
-langchain/
