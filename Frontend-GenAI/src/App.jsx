@@ -1,8 +1,11 @@
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import Sidebar from './components/Sidebar/Sidebar';
 import Main from './components/Main/Main';
-import Login from './Login/Login'; // Updated path
-import Signup from './Signup/Signup'; // Assuming a similar path for Signup
+import Login from './components/Login/Login'; 
+import Signup from './components/Signup/Signup';
+import UserData from './components/UserData/UserData'; 
+import UserProfile from './components/UserProfile/UserProfile';
+import ChatHistory from './components/ChatHistory/ChatHistory';
 
 function App() {
   return (
@@ -11,7 +14,9 @@ function App() {
         {/* Public Routes */}
         <Route path="/" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
-        
+        <Route path="/userdata" element={<UserData/>}/>
+        <Route path="/userprofile" element={<UserProfile/>}/>
+        <Route path="/chathistory" element={<ChatHistory/>}/>
         {/* Protected Routes (Sidebar only visible here) */}
         <Route
           path="/chatbot"

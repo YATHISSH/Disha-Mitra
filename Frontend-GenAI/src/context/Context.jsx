@@ -8,11 +8,30 @@ const ContextProvider = (props) => {
     const [input, setInput] = useState("");
     const [recentPrompt, setRecentPrompt] = useState("");
     const [prevPrompts, setPrevPrompts] = useState([]);
-    const [chatHistory, setChatHistory] = useState([]); // Store all chats
+    const [chatHistory, setChatHistory] = useState([]);  // This will store the chat history
     const [showResult, setShowResult] = useState(false);
     const [loading, setLoading] = useState(false);
     const [resultData, setResultData] = useState("");
-    const [themeColor, setThemeColor] = useState("#e9f1f7"); // Default background color
+    const [themeColor, setThemeColor] = useState("#e9f1f7");
+
+    // User Profile State
+    const [userProfile, setUserProfile] = useState({
+        group12: '',
+        physicsMark: '',
+        chemistryMark: '',
+        mathsMark: '',
+        biologyMark: '',
+        jeeMainsMark: '',
+        tenthPercentage: '',
+        twelfthPercentage: '',
+        exams: {
+            bitsat: '',
+            jeeAdvanced: '',
+            met: ''
+        },
+        parentalIncome: '',
+        category: ''
+    });
 
     const delayPara = (index, nextWord) => {
         setTimeout(() => {
@@ -21,11 +40,21 @@ const ContextProvider = (props) => {
     };
 
     const newChat = () => {
+        // Store the current chat session in the chat history before starting a new chat
+        if (recentPrompt || resultData) {
+            setChatHistory(prevHistory => [
+                ...prevHistory,
+                { prompt: recentPrompt, response: resultData }
+            ]); 
+        }
+
+        // Reset states for a new chat
         setLoading(false);
         setShowResult(false);
-        setRecentPrompt(""); // Clear the recent prompt for new chat
-        setResultData(""); // Clear result data
-        setThemeColor("#f4ece1"); // Update UI to a new unique color
+        setRecentPrompt("");
+        setResultData("");
+        setInput("");
+        setThemeColor("#f4ece1");
     };
 
     const onSent = async (prompt) => {
@@ -57,15 +86,39 @@ const ContextProvider = (props) => {
             const nextWord = newResponseArray[i];
             delayPara(i, nextWord + " ");
         }
-        setChatHistory(prev => [...prev, { prompt: recentPrompt, response: newResponse2 }]);
+
+        // Update the chat history with the latest chat
+        setChatHistory(prevHistory => [
+            ...prevHistory,
+            { prompt: recentPrompt, response: newResponse2 }
+        ]);
         setLoading(false);
         setInput("");
+    };
+
+    // Function to update user profile
+    const updateUserProfile = (updatedProfile) => {
+        setUserProfile(prev => ({ ...prev, ...updatedProfile }));
+    };
+
+    // Function to get chat history
+    const getChatHistory = () => {
+        return chatHistory;
+    };
+
+    // Function to edit a specific chat in the chat history
+    const editChatHistory = (index, updatedChat) => {
+        const updatedHistory = [...chatHistory];
+        updatedHistory[index] = updatedChat;
+        setChatHistory(updatedHistory);
     };
 
     const contextValue = {
         prevPrompts,
         setPrevPrompts,
-        chatHistory, // Provide chat history to other components
+        chatHistory,
+        getChatHistory,  // Expose getChatHistory function
+        editChatHistory, // Expose editChatHistory function
         onSent,
         setRecentPrompt,
         recentPrompt,
@@ -75,7 +128,9 @@ const ContextProvider = (props) => {
         input,
         setInput,
         newChat,
-        themeColor // Provide theme color to other components
+        themeColor,
+        userProfile, // Include user profile in context
+        updateUserProfile // Function to update user profile
     };
 
     return (
@@ -84,9 +139,9 @@ const ContextProvider = (props) => {
         </Context.Provider>
     );
 };
+
 ContextProvider.propTypes = {
     children: PropTypes.node.isRequired
 };
-
 
 export default ContextProvider;

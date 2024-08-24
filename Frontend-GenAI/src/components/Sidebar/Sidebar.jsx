@@ -1,93 +1,147 @@
-import { useState, useContext } from "react";
-import { Link } from 'react-router-dom';
+import { useState, useEffect, useContext } from "react";
+import { Link, useNavigate } from 'react-router-dom';
 import { assets } from "../../assets/assets";
-import PropTypes from 'prop-types';
 import { Context } from "../../context/Context";
 
 const Sidebar = () => {
     const { newChat, prevPrompts, chatHistory } = useContext(Context);
     const [extended, setExtended] = useState(false);
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        const handleResize = () => {
+            if (window.innerWidth >= 768) {
+                setExtended(true); 
+            } else {
+                setExtended(false); 
+            }
+        };
+
+        window.addEventListener('resize', handleResize);
+        handleResize(); 
+
+        return () => {
+            window.removeEventListener('resize', handleResize);
+        };
+    }, []);
+
+    const handleToggle = () => {
+        setExtended((prev) => !prev);
+    };
+
+    const handleLogout = () => {
+        navigate('/');
+    };
 
     return (
         <>
             {/* Menu Toggle Button */}
-            <img 
-                onClick={() => setExtended((prev) => !prev)} 
-                className="fixed top-4 left-4 z-50 w-8 h-8 cursor-pointer md:hidden" 
-                src={assets.menu_icon} 
-                alt="menu" 
-            />
-            <div className={`fixed top-0 left-0 z-40 h-full w-[220px] lg:w-[250px] bg-black p-4 text-[#ffffff] transform ${extended ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 md:flex md:w-[220px] lg:w-[250px] transition-transform duration-300 ease-in-out`}>
+            <span 
+                onClick={handleToggle} 
+                className={`fixed top-4 left-4 z-50 cursor-pointer text-[#ffffff]`} 
+            >
+                <span className="material-symbols-outlined text-[32px]">
+                    {extended ? 'menu_open' : 'menu'}
+                </span>
+            </span>
+
+            <div className={`fixed top-0 left-0 z-40 h-full w-[200px] lg:w-[220px] bg-gradient-to-br from-[#1c1e1f] to-[#1c2120] shadow-lg p-4 text-[#ffffff] transform ${extended ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out`}>
                 <div className="flex flex-col h-full">
                     {/* Logo */}
-                    <img src={assets.user_icon} alt="Logo" className="w-24 mx-auto mb-6" />
+                    <img src={assets.user_icon} alt="Logo" className="w-24 mx-auto mb-4" />
 
-                    <Link 
-                        to="/" 
+                    {/* New Chat Button */}
+                    <button
                         onClick={newChat} 
-                        className="font-bold mt-4 mb-2 flex items-center gap-2 p-2 bg-[#bd4b37] rounded-full text-sm cursor-pointer hover:bg-[#2b79b9]"
+                        className="font-bold text-sm flex items-center gap-2 p-3 bg-[#197e71] rounded-full cursor-pointer hover:bg-[#0c4f45] transition-colors duration-200"
                     >
                         <img src={assets.plus_icon} alt="new chat" className="w-5" />
                         <p>New Chat</p>
-                    </Link>
+                    </button>
 
                     {/* Sidebar Menu */}
                     <div className="mt-6 flex-1">
-                        <p className="text-[#e0f2f1] font-bold mb-2">Previous Chats</p>
-                        <div className="flex flex-col gap-1.5">
+                        <button 
+                            onClick={() => navigate('/chathistory')}
+                            className="text-[#e0f2f1] font-semibold text-md mb-3 cursor-pointer hover:text-[#ffffff] transition-colors duration-200"
+                        >
+                            Previous Chats
+                        </button>
+                        <div className="flex flex-col gap-2">
                             {prevPrompts.map((prompt, index) => (
-                                <MenuItem key={index} icon={assets.chat_icon} label={prompt} />
+                                <button 
+                                    key={index} 
+                                    onClick={() => navigate('/chathistory')}
+                                    className="flex items-center gap-2 p-3 rounded-full text-white cursor-pointer hover:bg-[#333333] transition-colors duration-200"
+                                >
+                                    <img src={assets.chat_icon} alt={prompt} className="w-5" />
+                                    <p className="text-sm font-medium">{prompt}</p>
+                                </button>
                             ))}
                         </div>
-
-                        <p className="text-[#e0f2f1] font-bold mt-4 mb-2">Chat History</p>
-                        <div className="flex flex-col gap-1.5">
+                        <div className="flex flex-col gap-2 mt-2">
                             {chatHistory.map((chat, index) => (
-                                <MenuItem key={index} icon={assets.chat_icon} label={chat.prompt} />
+                                <button 
+                                    key={index} 
+                                    onClick={() => navigate('/chathistory')}
+                                    className="flex items-center gap-2 p-3 rounded-full text-white cursor-pointer hover:bg-[#333333] transition-colors duration-200"
+                                >
+                                    <img src={assets.chat_icon} alt={chat.prompt} className="w-5" />
+                                    <p className="text-sm font-medium">{chat.prompt}</p>
+                                </button>
                             ))}
                         </div>
 
-                        <p className="text-[#bd4b37] font-bold mt-4 mb-2">Advancements</p>
-                      
-                        <div className="flex flex-col gap-1.5">
-                            <MenuItem icon={assets.compass_icon} label="Best Colleges" />
-                            <MenuItem icon={assets.bulb_icon} label="Placements" />
-                            <MenuItem icon={assets.history_icon} label="Request Cold Call" />
-                            <MenuItem icon={assets.bulb_icon} label="Updates" />
+                        <p className="text-[#f6c636] font-semibold text-md mt-6 mb-3">ENHANCEMENTS</p>
+                        <div className="flex flex-col gap-2">
+                            <Link to="/best-colleges" className="flex items-center gap-2 p-3 rounded-full bg-[#2a2f33] cursor-pointer hover:bg-[#3c4349] text-white transition-colors duration-200">
+                                <span className="material-symbols-outlined text-white text-[20px]">
+                                    school
+                                </span>
+                                <p>Best Colleges</p>
+                            </Link>
+                            <Link to="/placements" className="flex items-center gap-2 p-3 rounded-full bg-[#2a2f33] cursor-pointer hover:bg-[#3c4349] text-white transition-colors duration-200">
+                                <span className="material-symbols-outlined text-white text-[20px]">
+                                    work
+                                </span>
+                                <p>Placements</p>
+                            </Link>
+                            <Link to="/cold-call" className="flex items-center gap-2 p-3 rounded-full bg-[#2a2f33] cursor-pointer hover:bg-[#3c4349] text-white transition-colors duration-200">
+                                <span className="material-symbols-outlined text-white text-[20px]">
+                                    call
+                                </span>
+                                <p>Request Cold Call</p>
+                            </Link>
+                            <Link to="/updates" className="flex items-center gap-2 p-3 rounded-full bg-[#2a2f33] cursor-pointer hover:bg-[#3c4349] text-white transition-colors duration-200">
+                                <span className="material-symbols-outlined text-white text-[20px]">
+                                    update
+                                </span>
+                                <p>Updates</p>
+                            </Link>
                         </div>
                     </div>
 
-                    {/* Bottom Section with Settings and Activity */}
+                    {/* Bottom Section with Logout */}
                     <div className="mt-6">
-                        <Link to="/settings" className="flex items-center gap-2 p-2 rounded-full cursor-pointer hover:bg-[#00796b] text-white mb-2">
-                            <img src={assets.setting_icon} alt="settings" className="w-5" />
-                            <p>Settings</p>
-                        </Link>
+                        <div onClick={handleLogout} className="flex items-center gap-2 p-3 rounded-full cursor-pointer hover:bg-[#0c4f45] text-white transition-colors duration-200">
+                            <span className="material-symbols-outlined text-white text-[20px]">
+                                logout
+                            </span>
+                            <p className="font-bold">Logout</p>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            {/* Clickable Overlay to Close Sidebar */}
+            {/* Clickable Overlay to Close Sidebar on Mobile */}
             {extended && (
                 <div 
-                    className="fixed inset-0 bg-[#00000080] opacity-50 z-30 md:hidden" 
-                    onClick={() => setExtended(false)}
+                    className="fixed inset-0 bg-[#00000080] opacity-50 z-30 md:hidden lg:hidden" 
+                    onClick={handleToggle}
                 ></div>
             )}
         </>
     );
-};
-
-const MenuItem = ({ icon, label }) => (
-    <div className="flex items-start gap-2 p-2 rounded-full text-white cursor-pointer hover:bg-[#333333]">
-        <img src={icon} alt={label} className="w-5" />
-        <p>{label}</p>
-    </div>
-);
-
-MenuItem.propTypes = {
-    icon: PropTypes.string.isRequired,
-    label: PropTypes.string.isRequired,
 };
 
 export default Sidebar;
