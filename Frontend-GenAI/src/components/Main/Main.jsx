@@ -19,6 +19,7 @@ const shuffleArray = (array) => {
 const Main = () => {
     const { onSent, showResult, loading, setInput, input, themeColor } = useContext(Context);
     const [shareOpen, setShareOpen] = useState(false);
+    const inputRef = useRef(null);
     const [suggestions, setSuggestions] = useState([]);
     const [messages, setMessages] = useState([]);
     const [isSending, setIsSending] = useState(false);
@@ -26,8 +27,8 @@ const Main = () => {
     const [suggestionIndex, setSuggestionIndex] = useState(0); // Track the current suggestion index
     const [setShowSuggestions] = useState(true); // Track visibility of suggestions
     const chatContainerRef = useRef(null);
-    const recognitionRef = useRef(null); // Reference to the chat container
-
+    const recognitionRef = useRef(null); 
+    
     // Full list of short suggestions
     const allSuggestions = [
         "Top Engineering Colleges",
@@ -37,6 +38,10 @@ const Main = () => {
         "Entrance exams",
         "Eligibility criteria"
     ];
+    const playMicSound = () => {
+        const micSound = new Audio(assets.recognition_sound);
+        micSound.play();
+    }; 
     const fileToText = async (file) => {
         try {
             const text = await file.text();
@@ -93,10 +98,20 @@ const Main = () => {
 
     useEffect(() => {
         if (chatContainerRef.current) {
-            // Force scroll to the bottom instantly when new messages or typing text is updated
+            // Auto scroll to bottom when messages, typingMessage, or suggestions change
             chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
         }
-    }, [messages, typingMessage]);
+    }, [messages, typingMessage, suggestions]);
+    
+    useEffect(() => {
+        if (inputRef.current) {
+            inputRef.current.focus();
+        }
+    }, [messages, isSending]);
+    
+    
+    
+
     const startVoiceInput = () => {
         if (recognitionRef.current) {
             recognitionRef.current.start(); // Start speech recognition
@@ -143,7 +158,7 @@ const Main = () => {
         setTimeout(() => {
             receiveAIResponse();
         }, 1000);
-
+        setIsSending(true);
         setInput('');
         updateSuggestions(); // Update suggestions after sending a message
         setShowSuggestions(false); // Hide suggestions while generating response
@@ -151,9 +166,7 @@ const Main = () => {
 
     const updateSuggestions = () => {
         setSuggestionIndex((prevIndex) => {
-            // Update the index to show a different set of suggestions
             const nextIndex = prevIndex + 2;
-            // Loop back to start if the index exceeds the array length
             return nextIndex >= allSuggestions.length ? 0 : nextIndex;
         });
     };
@@ -161,18 +174,17 @@ const Main = () => {
     const receiveAIResponse = () => {
         const aiResponse = "Thank you for reaching out! I’m here to help you with all your admission-related queries. Whether you need details about eligibility requirements, application deadlines, scholarship opportunities, or program specifics, just let me know. I can provide guidance on choosing the right course, understanding admission processes, and connecting you with resources to make your application process as smooth as possible. Feel free to ask any questions you have!";
         
-        // Simulate typing effect
         simulateTyping(aiResponse);
     };
 
     const simulateTyping = (text) => {
-        let index = 0; // Start at the beginning of the text
-        setTypingMessage(''); // Clear any existing typing message before starting
+        let index = 0; 
+        setTypingMessage(''); 
     
-        // Define an interval to simulate typing effect
+       
         const typingInterval = setInterval(() => {
             if (index < text.length) {
-                // Add the next character to the typing message
+
                 setTypingMessage((prev) => prev + text.charAt(index));
                 index++; 
             } else {
@@ -186,7 +198,7 @@ const Main = () => {
     };
     
     
-
+     
     const handleCardClick = (text) => {
         sendMessage(text);
     };
@@ -245,7 +257,7 @@ const Main = () => {
                     <>
                         <div className="my-12 text-[38px] md:text-[50px] text-[#00796b] font-medium p-1">
                             <p>
-                                <span className="bg-gradient-to-r from-[#125151] via-[#187eb9] font-mono font-bold to-[#0a6e62] bg-clip-text text-transparent">
+                                <span className="bg-gradient-to-r from-[#125151] via-[#187eb9] font-verdana font-bold to-[#0a6e62] bg-clip-text text-transparent">
                                      How can I assist your admission process today?
                                 </span>
                             </p>
@@ -253,12 +265,12 @@ const Main = () => {
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 p-4">
                             {[
                                 { icon: assets.compass_icon, text: "Explore top NIRF/NAAC-ranked colleges." },
-                                { icon: assets.bulb_icon, text: "Best Colleges for Computer Science Engineering." },
-                                { icon: assets.message_icon, text: "Know about Colleges with High placements and better Academic Performance." },
+                                { icon: assets.college_icon, text: "Best Colleges for Computer Science Engineering." },
+                                { icon: assets.suitcase_icon, text: "Know about Colleges with High placements and better Academic Performance." },
                             ].map((item, index) => (
                                 <div
                                     key={index}
-                                    className="h-[200px] p-3 bg-[#ffffff] rounded-lg shadow-lg relative cursor-pointer hover:bg-[#74cec3]  border-2 border-[#00796b] hover:shadow-xl transition-all duration-300 ease-in-out"
+                                    className="h-[200px] font-verdana font-bold p-3 bg-[#ffffff] rounded-lg shadow-lg relative cursor-pointer hover:bg-[#74cec3]  border-2 border-[#00796b] hover:shadow-xl transition-all duration-300 ease-in-out"
                                     onClick={() => handleCardClick(item.text)}
                                     style={{ borderLeft: '5px solid #004d40' }} // Adding a left border for a highlight effect
                                 >
@@ -273,7 +285,7 @@ const Main = () => {
                         </div>
                     </>
                 ) : (
-                    <div ref={chatContainerRef} className='flex-1 px-[5%] overflow-y-auto'>
+                    <div ref={chatContainerRef} className='flex-1 px-[1%] overflow-y-auto scroll-auto'>
                         {/* Render chat messages */}
                         <div className="my-10 flex flex-col gap-5">
   {messages.map((msg, index) => (
@@ -294,8 +306,8 @@ const Main = () => {
       <p
         className={`${
           msg.sender === "user"
-            ? "bg-[#000000] text-white font-mono text-base sm:text-xl font-bold p-2 sm:p-4 rounded-lg shadow-md"
-            : "bg-[#1f628c] text-white font-mono text-base sm:text-xl font-bold p-2 sm:p-4 rounded-lg shadow-md"
+            ? "bg-[#000000] text-white font-verdana text-base sm:text-xl font-bold p-2 sm:p-4 rounded-lg shadow-md"
+            : "bg-[#1f628c] text-white font-verdana text-base sm:text-xl font-bold p-2 sm:p-4 rounded-lg shadow-md"
         } max-w-[85%] sm:max-w-[70%] break-words`}
       >
         {msg.text}
@@ -306,7 +318,7 @@ const Main = () => {
                             {typingMessage && (
                                 <div className="flex items-start gap-5 justify-start">
                                     <img src={assets.bbq_icon} alt="AI" className="w-10 rounded-full" />
-                                    <p className="bg-[#1f628c] text-white font-mono font-bold text-xl p-4 rounded-lg shadow-md max-w-[70%] break-words">
+                                    <p className="bg-[#1f628c] text-white font-verdana  text-xl p-4 rounded-lg shadow-md max-w-[70%] break-words">
                                         {typingMessage}
                                     </p>
                                 </div>
@@ -321,7 +333,7 @@ const Main = () => {
                                     {suggestions.map((suggestion, index) => (
                                         <button
                                             key={index}
-                                            className="bg-[#00796b] text-white font-mono text-l px-4 py-2 rounded-full shadow-md hover:bg-[#004d40] transition-colors duration-300 text-sm md:text-base lg:text-lg"
+                                            className="bg-[#00796b] text-white font-verdana  text-l px-4 py-2 rounded-full shadow-md hover:bg-[#000000] transition-colors duration-300 text-sm md:text-base lg:text-lg"
                                             onClick={() => sendMessage(suggestion)}
                                         >
                                             {suggestion}
@@ -332,36 +344,71 @@ const Main = () => {
                         )}
                     </div>
                 )}
-    
-                <div className="w-500 h-500 flex items-center justify-between gap-5 bg-[#ffffff] p-2.5 rounded-full shadow-lg border-2 border-line border-black">
-                <img src={assets.mic_icon} alt="Mic" className="w-7 cursor-pointer " onClick={startVoiceInput} /> 
-                <input
-                type="file"
-                accept="image/*,text/plain"
-                onChange={handleFileUpload}
-                className="hidden" // Hides the input but still makes it functional
-                id="fileUpload"
-            />
-            <label htmlFor="fileUpload" className="cursor-pointer">
-                <img src={assets.gallery_icon} alt="Upload" className="w-7 cursor-pointer" />
-            </label>
-                <input onChange={(e) => setInput(e.target.value)}
-                        value={input}
-                        type="text"
-                        placeholder='Enter your query here'
-                        onKeyDown={handleKeyDown}
-                        className="flex-1 bg-transparent border-none font-roboto outline-none p-2 text-[18px] text-[#004d40] break-words"
-                    />
-                    <div className="flex items-center gap-3.5">
-            
-                        
-                        {input ? (
-                            <img onClick={() => sendMessage(input)} src={assets.send_icon} alt="Send" className="w-6 cursor-pointer" />
-                        ) : (
-                            <img src={assets.send_icon} alt="Send" className="w-6 cursor-pointer opacity-50" />
-                        )}
-                    </div>
-                </div>
+                <br></br>
+                <br></br>
+                <br></br><br></br><br></br><br></br>
+
+
+ <div className="fixed bottom-1 left-1/2 transform -translate-x-1/2 w-full max-w-3xl px-4 py-2 flex items-center justify-between gap-4 bg-white border-2 border-black shadow-lg rounded-lg sm:rounded-xl">
+  {/* Mic Icon */}
+  <img
+    src={assets.mic_icon}
+    alt="Mic"
+    className={`w-6 sm:w-7 cursor-pointer ${isSending ? 'opacity-50 cursor-not-allowed' : ''}`}
+    onClick={() => {
+      startVoiceInput();
+      playMicSound(); // Function to play the recognition sound
+    }}
+    disabled={isSending} // Disable when sending
+  />
+
+  {/* File Upload */}
+  <input
+    type="file"
+    accept="image/*,text/plain"
+    onChange={handleFileUpload}
+    className="hidden"
+    id="fileUpload"
+    disabled={isSending} // Disable when sending
+  />
+  <label htmlFor="fileUpload" className={`cursor-pointer ${isSending ? 'opacity-50 cursor-not-allowed' : ''}`}>
+    <img src={assets.gallery_icon} alt="Upload" className="w-6 sm:w-7" />
+  </label>
+
+  {/* Input Field */}
+  <input
+    onChange={(e) => setInput(e.target.value)}
+    value={input}
+    type="text"
+    placeholder={isSending ? 'Generating response...' : 'Enter your query here'}
+    onKeyDown={handleKeyDown}
+    className={`flex-1 bg-transparent border-none font-verdana outline-none p-2 text-sm sm:text-base md:text-lg lg:text-xl text-[#000000] break-words ${isSending ? 'opacity-50 cursor-not-allowed' : ''}`}
+    disabled={isSending} // Disable input when sending
+  />
+
+  <div className="flex items-center gap-3.5">
+    {/* Send Icon */}
+    <img
+      onClick={() => input && sendMessage(input)}
+      src={assets.send_icon}
+      alt="Send"
+      className={`w-5 sm:w-6 cursor-pointer font-bold ${!input || isSending ? 'opacity-50 cursor-not-allowed' : ''}`}
+      disabled={!input || isSending} // Disable button when no input or when sending
+    />
+
+    {/* Loader when sending */}
+    {isSending && (
+  <div className="relative flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 lg:w-12 lg:h-12">
+    {/* BBQ Logo with rounded shape and spinning animation */}
+    <img 
+      src={assets.bbq_icon}
+      alt="BBQ Logo" 
+      className="w-full h-full rounded-full object-contain animate-spin" 
+    />
+  </div>
+)}        
+            </div>
+        </div>
             </div>
         </div>
     );

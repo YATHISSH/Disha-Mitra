@@ -14,6 +14,9 @@ import code_icon from './code_icon.png'
 import send_icon from './send_icon.png'
 import govt_icon from './govt_raj.png'
 import bbq_icon from './BBQ_Logo.png'
+import recognition_sound from './recognition_sound.mp3'
+import suitcase_icon from './suitcase_icon.png'
+import college_icon from './college_icon.png'
 export const assets = {
     history_icon,
     menu_icon,
@@ -31,4 +34,7 @@ export const assets = {
     bbq_icon,
     code_icon,
     send_icon,
+    recognition_sound,
+    college_icon,
+    suitcase_icon
 }

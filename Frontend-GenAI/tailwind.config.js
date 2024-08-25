@@ -10,6 +10,9 @@ export default {
         primary: '#004d40',
         secondary: '#00796b',
       },
+       fontFamily: {
+        verdana: ['Verdana', 'sans-serif'],
+      },
     },
   },
   plugins: [],

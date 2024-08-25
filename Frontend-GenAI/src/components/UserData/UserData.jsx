@@ -39,7 +39,7 @@ const UserData = () => {
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gradient-to-r from-[#125151] via-[#187eb9] to-[#0a6e62] font-mono font-bold text-white">
+    <div className="flex justify-center items-center min-h-screen bg-gradient-to-r from-[#125151] via-[#187eb9] to-[#0a6e62] font-verdana text-white">
       <div className="bg-[#000000] bg-opacity-80 p-10 rounded-3xl shadow-2xl w-full max-w-4xl transform transition-all duration-500 ease-in-out hover:scale-105 hover:shadow-[0_0_40px_rgba(0,0,0,0.5)]">
         <h2 className="text-3xl font-extrabold mb-8 text-center tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-[#c04934] to-[#17bbbb] animate-pulse">
           Fill Your Details
@@ -212,14 +212,14 @@ const UserData = () => {
             <button
               type="button"
               onClick={handleSkip}
-              className="px-6 py-3 rounded-lg bg-gradient-to-r from-[#bd4b37] to-[#125151] hover:from-[#9c3f30] transition duration-300 ease-in-out"
+              className="px-6 py-3 rounded-lg bg-gradient-to-r from-[#b6412d] to-[#9d120d] hover:from-[#af2828] transition duration-300 ease-in-out"
             >
               Skip for now , Parent/Others 
             </button>
 
             <button
               type="submit"
-              className="px-6 py-3 rounded-lg bg-gradient-to-r from-[#bd4b37] to-[#125151] hover:from-[#9c3f30] transition duration-300 ease-in-out flex items-center justify-center"
+              className="px-6 py-3 rounded-lg bg-gradient-to-r from-[#208a4f] to-[#0d9d36] hover:from-[#3f8a1d] transition duration-300 ease-in-out flex items-center justify-center"
               disabled={loading}
             >
               {loading ? 'Submitting...' : 'I am a Student , Submit'}

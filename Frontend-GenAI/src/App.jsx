@@ -6,6 +6,7 @@ import Signup from './components/Signup/Signup';
 import UserData from './components/UserData/UserData'; 
 import UserProfile from './components/UserProfile/UserProfile';
 import ChatHistory from './components/ChatHistory/ChatHistory';
+import AdminPortal from './components/Admin/Admin';
 
 function App() {
   return (
@@ -17,6 +18,8 @@ function App() {
         <Route path="/userdata" element={<UserData/>}/>
         <Route path="/userprofile" element={<UserProfile/>}/>
         <Route path="/chathistory" element={<ChatHistory/>}/>
+        <Route path="/admin-portal" element={<AdminPortal/>}/>
+
         {/* Protected Routes (Sidebar only visible here) */}
         <Route
           path="/chatbot"

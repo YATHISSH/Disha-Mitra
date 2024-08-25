@@ -20,30 +20,37 @@ const UserProfile = () => {
     };
 
     return (
-        <div className="max-w-lg mx-auto p-4">
-            <h1 className="text-2xl font-bold mb-4">User Profile</h1>
-            <form onSubmit={handleSubmit} className="space-y-4">
-                {/* Render form fields */}
-                {Object.keys(profileData).map((key) => (
-                    <div key={key} className="flex flex-col">
-                        <label htmlFor={key} className="mb-1 text-sm font-medium">{key.replace(/([A-Z])/g, ' $1').toUpperCase()}</label>
-                        <input
-                            id={key}
-                            name={key}
-                            type="text"
-                            value={profileData[key]}
-                            onChange={handleChange}
-                            className="p-2 border border-gray-300 rounded"
-                        />
+        <div className="flex justify-center items-center min-h-screen bg-gradient-to-r from-[#125151] via-[#187eb9] to-[#0a6e62] font-verdana text-white">
+            <div className="bg-[#000000] bg-opacity-80 p-10 rounded-3xl shadow-2xl w-full max-w-4xl transform transition-all duration-500 ease-in-out hover:scale-105 hover:shadow-[0_0_40px_rgba(0,0,0,0.5)]">
+                <h2 className="text-3xl font-extrabold mb-8 text-center tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-[#c04934] to-[#17bbbb] animate-pulse">
+                    User Profile
+                </h2>
+                <form onSubmit={handleSubmit} className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {Object.keys(profileData).map((key) => (
+                            <div key={key} className="inputBox">
+                                <input
+                                    type="text"
+                                    placeholder={key.replace(/([A-Z])/g, ' $1').toUpperCase()}
+                                    name={key}
+                                    value={profileData[key]}
+                                    onChange={handleChange}
+                                    className="w-full px-4 py-3 mt-2 text-gray-900 bg-gray-200 bg-opacity-90 border border-transparent rounded-lg focus:outline-none focus:ring-4 focus:ring-[#bd4b37] focus:ring-opacity-50 transition duration-300 ease-in-out"
+                                />
+                            </div>
+                        ))}
                     </div>
-                ))}
-                <button
-                    type="submit"
-                    className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
-                >
-                    Update Profile
-                </button>
-            </form>
+
+                    <div className="flex justify-between mt-8">
+                        <button
+                            type="submit"
+                            className="px-6 py-3 rounded-lg bg-gradient-to-r from-[#208a4f] to-[#0d9d36] hover:from-[#3f8a1d] transition duration-300 ease-in-out flex items-center justify-center"
+                        >
+                            Update Profile
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     );
 };

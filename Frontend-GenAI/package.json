@@ -13,6 +13,7 @@
     "@google/generative-ai": "^0.16.0",
     "@headlessui/react": "^2.1.2",
     "@hookform/resolvers": "^3.9.0",
+    "@mui/icons-material": "^5.16.7",
     "axios": "^1.7.2",
     "bbq-ieee": "file:",
     "BBQ-IEEE": "file:",
