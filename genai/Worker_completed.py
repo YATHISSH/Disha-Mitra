@@ -4,12 +4,14 @@ from dotenv import load_dotenv
 from langchain_core.prompts import PromptTemplate
 from langchain.chains import RetrievalQA
 from langchain_community.embeddings import HuggingFaceInstructEmbeddings
-from langchain_community.document_loaders import PyPDFLoader
+from langchain_community.document_loaders import PyMuPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import Chroma
+from langchain.schema import Document
 from langchain_community.llms import HuggingFaceEndpoint
+import fitz  # PyMuPDF for advanced PDF text and table extraction
 
-#Load env variables
+# Load environment variables
 load_dotenv()
 
 # Check for GPU availability and set the appropriate device for computation.
@@ -26,34 +28,49 @@ def init_llm():
 
     # Set up the environment variable for HuggingFace and initialize the desired model
     os.environ["HUGGINGFACEHUB_API_TOKEN"] = os.getenv('HUGGING_FACE_TOKEN')
-    model_id = "mistralai/Mistral-7B-Instruct-v0.3"
+    model_id = "mistralai/Mixtral-8x7B-Instruct-v0.1"
     
-    # Initialize the model with the correct task without overriding
+    # Initialize the model with the correct task
     llm_hub = HuggingFaceEndpoint(
         repo_id=model_id, 
-        model_kwargs={"max_length": 600},
-        task="text-generation"  # Specify the task explicitly
+        model_kwargs={"max_length": 1200},  # Adjusted for longer responses
+        task="text-generation"
     )
 
     # Initialize embeddings using a pre-trained model to represent the text data
     embeddings = HuggingFaceInstructEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
 
-# Function to process a PDF document
+# Function to process a PDF document and extract text and tables
 def process_document():
     global conversation_retrieval_chain
 
-    # # Load the document
-    # loader = PyPDFLoader(document_path)
-    # documents = loader.load()
-    # #print(documents)
+    # # Load the document with PyMuPDF
+    # doc = fitz.open(document_path)
+    # combined_text = ""
+
+    # # Iterate over each page to extract text and handle tables
+    # for page in doc:
+    #     text = page.get_text("text")  # Extract text
+    #     combined_text += text + "\n\n"  # Add extracted text to the combined text
+
+    #     # Optionally, extract tables as plain text (PyMuPDF has limited table extraction support)
+    #     # Here, we simulate table extraction by looking for multi-line text blocks
+    #     # This is a simple heuristic and might need adjustments based on the document structure.
+    #     for block in page.get_text("blocks"):
+    #         if len(block[4].splitlines()) > 1:  # Check for multi-line blocks
+    #             combined_text += "\n[Table Data]\n" + block[4] + "\n"
 
     # # Split the document into chunks
-    # text_splitter = RecursiveCharacterTextSplitter(chunk_size=1024, chunk_overlap=64)
-    # texts = text_splitter.split_documents(documents)
+    # text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)  # Adjust chunking
+    # texts = text_splitter.split_text(combined_text)
+
+    # # Convert the chunks into Document objects
+    # documents = [Document(page_content=text) for text in texts]
 
     # # Create an embeddings database using Chroma from the split text chunks
-    # db = Chroma.from_documents(texts, embedding=embeddings,persist_directory="./chroma_directory")
+    # db = Chroma.from_documents(documents=documents, embedding=embeddings, persist_directory="./chroma_directory")
 
+    #Perists Directory
     db=Chroma(persist_directory="./chroma_directory",embedding_function=embeddings)
 
     # Build the QA chain, which utilizes the LLM and retriever for answering questions
@@ -83,9 +100,8 @@ def process_prompt(prompt):
 # Initialize the language model
 init_llm()
 
-# Ensure the document is processed
-#process_document("ilovepdf_merged.pdf")
+# # Process the provided PDF document
+# process_document("c:/Users/DB-L-077/Desktop/BBQ-SIH-24-1631/try.pdf")
 
 # # Test processing a prompt
-# print(process_prompt(" A Samsung duo and a Galaxy are bought for Rs.40000. The Duo is sold at a profit of 33.33% and the Galaxy is sold at a loss of 20%. There was no loss or gain. Find the cost price of the Samsung duo?."))
-
+# print(process_prompt("what are the expected cutoffs to get admissions in IIT Jodhpur?"))

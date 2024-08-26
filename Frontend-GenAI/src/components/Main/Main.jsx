@@ -1,9 +1,10 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useContext, useState, useEffect, useRef } from 'react';
 import { assets } from '../../assets/assets';
 import { Context } from '../../context/Context';
 import { Link } from 'react-router-dom';
 import Tesseract from 'tesseract.js';
-// Function to shuffle the suggestions array
+
 const shuffleArray = (array) => {
     let currentIndex = array.length, randomIndex;
 
@@ -17,17 +18,21 @@ const shuffleArray = (array) => {
 };
 
 const Main = () => {
-    const { onSent, showResult, loading, setInput, input, themeColor } = useContext(Context);
+    const { showResult, loading, setInput, input, themeColor } = useContext(Context);
     const [shareOpen, setShareOpen] = useState(false);
+    const lastMessageRef = useRef(null);
     const inputRef = useRef(null);
     const [suggestions, setSuggestions] = useState([]);
     const [messages, setMessages] = useState([]);
+    const [showCards, setShowCards] = useState(true); // Initially show cards
     const [isSending, setIsSending] = useState(false);
     const [typingMessage, setTypingMessage] = useState('');  // For typing effect
     const [suggestionIndex, setSuggestionIndex] = useState(0); // Track the current suggestion index
-    const [setShowSuggestions] = useState(true); // Track visibility of suggestions
+    const [showSuggestions, setShowSuggestions] = useState(false); // Track visibility of suggestions
     const chatContainerRef = useRef(null);
-    const recognitionRef = useRef(null); 
+    const [hasStartedChatting, setHasStartedChatting] = useState(false);
+    const recognitionRef = useRef(null);  
+    const [,setMessageSent] = useState(false); // Track if a message has been sent 
     
     // Full list of short suggestions
     const allSuggestions = [
@@ -38,10 +43,12 @@ const Main = () => {
         "Entrance exams",
         "Eligibility criteria"
     ];
+    
     const playMicSound = () => {
         const micSound = new Audio(assets.recognition_sound);
         micSound.play();
     }; 
+    
     const fileToText = async (file) => {
         try {
             const text = await file.text();
@@ -51,6 +58,7 @@ const Main = () => {
             return 'Error reading file';
         }
     };
+    
     const imageToText = async (file) => {
         try {
             const { data: { text } } = await Tesseract.recognize(file, 'eng');
@@ -60,6 +68,7 @@ const Main = () => {
             return '';
         }
     };
+    
     useEffect(() => {
         if (loading) {
             setIsSending(true);
@@ -101,22 +110,20 @@ const Main = () => {
             // Auto scroll to bottom when messages, typingMessage, or suggestions change
             chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
         }
-    }, [messages, typingMessage, suggestions]);
-    
+    }, [messages, typingMessage, suggestions, isSending]); // Added isSending to the dependencies
+
     useEffect(() => {
         if (inputRef.current) {
             inputRef.current.focus();
         }
     }, [messages, isSending]);
     
-    
-    
-
     const startVoiceInput = () => {
         if (recognitionRef.current) {
             recognitionRef.current.start(); // Start speech recognition
         }
     };
+
     const handleFileUpload = async (event) => {
         const file = event.target.files[0];
         let extractedText = '';
@@ -142,7 +149,6 @@ const Main = () => {
             }
         }
     };
-    
 
     const handleKeyDown = (e) => {
         if (e.key === 'Enter' && input.trim() !== '') {
@@ -151,18 +157,40 @@ const Main = () => {
         }
     };
 
-    const sendMessage = (message) => {
-        setMessages([...messages, { sender: 'user', text: message }]);
-        onSent(message);
-        
-        setTimeout(() => {
-            receiveAIResponse();
-        }, 1000);
+    const sendMessage = async (message) => {
+        // Check if the user is sending their first message
+        if (!hasStartedChatting) {
+            setHasStartedChatting(true); // Hide the intro message when the user sends the first message
+        }
+    
+        // Add the user's message to the messages array
+        setMessages((prevMessages) => [...prevMessages, { sender: 'user', text: message }]);
         setIsSending(true);
         setInput('');
-        updateSuggestions(); // Update suggestions after sending a message
-        setShowSuggestions(false); // Hide suggestions while generating response
+        setMessageSent(true); // Mark that a message has been sent
+        
+        try {
+            const response = await fetch('https://rightly-sunny-ibex.ngrok-free.app/api/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ userMessage: message }),
+            });
+    
+            const data = await response.json();
+            console.log(data.botResponse);
+    
+            simulateTyping(data.botResponse);  // Display the AI's response with a typing simulation effect
+        } catch (error) {
+            console.error('Error sending message to server:', error);
+            setIsSending(false); // Stop the sending animation if there's an error
+        }
+        
+        updateSuggestions();
+        setShowSuggestions(true); // Ensure suggestions are correctly toggled
     };
+    
 
     const updateSuggestions = () => {
         setSuggestionIndex((prevIndex) => {
@@ -171,34 +199,23 @@ const Main = () => {
         });
     };
 
-    const receiveAIResponse = () => {
-        const aiResponse = "Thank you for reaching out! I’m here to help you with all your admission-related queries. Whether you need details about eligibility requirements, application deadlines, scholarship opportunities, or program specifics, just let me know. I can provide guidance on choosing the right course, understanding admission processes, and connecting you with resources to make your application process as smooth as possible. Feel free to ask any questions you have!";
-        
-        simulateTyping(aiResponse);
-    };
-
-    const simulateTyping = (text) => {
-        let index = 0; 
-        setTypingMessage(''); 
+    const simulateTyping = (message) => {
+        if (!message) return;
     
-       
-        const typingInterval = setInterval(() => {
-            if (index < text.length) {
-
-                setTypingMessage((prev) => prev + text.charAt(index));
-                index++; 
+        let currentIndex = 0;
+        const intervalId = setInterval(() => {
+            if (currentIndex < message.length) {
+                setTypingMessage((prev) => prev + message[currentIndex]);
+                currentIndex++;
             } else {
-                clearInterval(typingInterval);
-                setMessages((prevMessages) => [...prevMessages, { sender: 'ai', text }]);
-                setIsSending(false); // Stop any sending animation
-                setTypingMessage(''); // Clear the typing message
-                setShowSuggestions(true); // Show suggestions again after AI response
+                clearInterval(intervalId);
+                setMessages((prev) => [...prev, { sender: 'bot', text: message }]); // Save the final bot response
+                setTypingMessage(''); // Clear after setting
+                setIsSending(false); // Ensure sending is marked as false after typing
             }
-        }, 13); 
+        }, 12);
     };
     
-    
-     
     const handleCardClick = (text) => {
         sendMessage(text);
     };
@@ -206,6 +223,15 @@ const Main = () => {
     const toggleShare = () => {
         setShareOpen(!shareOpen);
     };
+    
+    const scrollToBottom = () => {
+        chatContainerRef.current?.scrollIntoView({ behavior: 'smooth' });
+      };
+      
+      useEffect(() => {
+        scrollToBottom();
+      }, []);
+      
 
     return (
         <div className='flex flex-col min-h-screen relative' style={{ backgroundColor: themeColor }}>
@@ -218,6 +244,7 @@ const Main = () => {
                         </p>
                     </div>
                 </div>
+                {/* Arrow Icon for Scroll to Input */}
                 <div className="flex items-center space-x-4 relative">
                     <span className="material-symbols-outlined text-white cursor-pointer transition-colors duration-300 hover:text-[#80cbc4]" onClick={toggleShare}>
                         ios_share
@@ -253,166 +280,166 @@ const Main = () => {
             </nav>
     
             <div className="flex-1 max-w-[900px] mx-auto flex flex-col">
-                {!showResult ? (
-                    <>
-                        <div className="my-12 text-[38px] md:text-[50px] text-[#00796b] font-medium p-1">
-                            <p>
-                                <span className="bg-gradient-to-r from-[#125151] via-[#187eb9] font-verdana font-bold to-[#0a6e62] bg-clip-text text-transparent">
-                                     How can I assist your admission process today?
-                                </span>
-                            </p>
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 p-4">
-                            {[
-                                { icon: assets.compass_icon, text: "Explore top NIRF/NAAC-ranked colleges." },
-                                { icon: assets.college_icon, text: "Best Colleges for Computer Science Engineering." },
-                                { icon: assets.suitcase_icon, text: "Know about Colleges with High placements and better Academic Performance." },
-                            ].map((item, index) => (
-                                <div
-                                    key={index}
-                                    className="h-[200px] font-verdana font-bold p-3 bg-[#ffffff] rounded-lg shadow-lg relative cursor-pointer hover:bg-[#74cec3]  border-2 border-[#00796b] hover:shadow-xl transition-all duration-300 ease-in-out"
-                                    onClick={() => handleCardClick(item.text)}
-                                    style={{ borderLeft: '5px solid #004d40' }} // Adding a left border for a highlight effect
+            <div className="flex-1 max-w-[900px] mx-auto flex flex-col">
+                {/* Introductory Message */}
+                {!hasStartedChatting && (
+       <div className="my-12 text-[38px] md:text-[50px] text-[#00796b] font-medium p-1">
+        <p>
+            <span className="bg-gradient-to-r from-[#1b7474] via-[#1b7ab1] font-verdana font-bold to-[#065c52] bg-clip-text text-transparent">
+                How can I assist your admission process today?
+            </span>
+        </p>
+        </div>
+        )}
+                {/* Cards Section */}
+                
+
+                {showCards && !showResult && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 p-4">
+                        {[
+                            { icon: assets.compass_icon, text: "Explore top NIRF/NAAC-ranked colleges." },
+                            { icon: assets.college_icon, text: "Best Colleges for Computer Science Engineering." },
+                            { icon: assets.suitcase_icon, text: "Know about Colleges with High placements and better Academic Performance." },
+                        ].map((item, index) => (
+                            <div
+                                key={index}
+                                className="h-[200px] font-verdana font-bold p-3 bg-[#ffffff] rounded-lg shadow-lg relative cursor-pointer hover:bg-[#74cec3] border-2 border-[#00796b] hover:shadow-xl transition-all duration-300 ease-in-out"
+                                onClick={() => {
+                                    handleCardClick(item.text);
+                                    setShowCards(false); // Hide cards after clicking
+                                }}
+                                style={{ borderLeft: '5px solid #004d40' }}
+                            >
+                                <p className="text-[#004d40] text-[17px] font-semibold">{item.text}</p>
+                                <img
+                                    src={item.icon}
+                                    alt={item.text}
+                                    className="w-9 p-1 absolute bg-[#00796b] text-white rounded-full bottom-2.5 right-2.5 transition-transform duration-300 ease-in-out transform hover:scale-110"
+                                />
+                            </div>
+                            
+                        ))}
+                    </div>
+                )}
+    
+                {/* Chat Section */}
+                <div ref={chatContainerRef} className='flex-1 px-[1%] overflow-y-auto scroll-auto mt-4 mb-16'>
+    <div className="my-10 flex flex-col gap-5">
+        {messages.map((msg, index) => (
+            <div
+                key={index}
+                className={`flex items-start gap-2 sm:gap-5 ${msg.sender === "user" ? "justify-end" : "justify-start"}`}
+                ref={index === messages.length - 1 ? lastMessageRef : null} // Attach ref to the last message
+            >
+                                <img
+                                    src={msg.sender === "user" ? assets.user_icon : assets.bbq_icon}
+                                    alt={msg.sender}
+                                    className="w-8 sm:w-10 rounded-full"
+                                />
+                                <p
+                                    className={`${
+                                        msg.sender === "user"
+                                            ? "bg-[#000000] text-white font-verdana text-base sm:text-xl  p-2 sm:p-4 rounded-lg shadow-md"
+                                            : "bg-[#1f628c] text-white font-verdana text-base sm:text-xl  p-2 sm:p-4 rounded-lg shadow-md"
+                                    } max-w-[85%] sm:max-w-[70%] break-words`}
                                 >
-                                    <p className="text-[#004d40] text-[17px] font-semibold">{item.text}</p>
-                                    <img
-                                        src={item.icon}
-                                        alt={item.text}
-                                        className="w-9 p-1 absolute bg-[#00796b] text-white rounded-full bottom-2.5 right-2.5 transition-transform duration-300 ease-in-out transform hover:scale-110" // Added hover effect
-                                    />
-                                </div>
-                            ))}
-                        </div>
-                    </>
-                ) : (
-                    <div ref={chatContainerRef} className='flex-1 px-[1%] overflow-y-auto scroll-auto'>
-                        {/* Render chat messages */}
-                        <div className="my-10 flex flex-col gap-5">
-  {messages.map((msg, index) => (
-    <div
-      key={index}
-      className={`flex items-start gap-2 sm:gap-5 ${
-        msg.sender === "user" ? "justify-end" : "justify-start"
-      }`}
-    >
-      {/* User or AI Avatar */}
-      <img
-        src={msg.sender === "user" ? assets.user_icon : assets.bbq_icon}
-        alt={msg.sender}
-        className="w-8 sm:w-10 rounded-full" // Smaller image size for small screens
-      />
-      
-      {/* Message Content */}
-      <p
-        className={`${
-          msg.sender === "user"
-            ? "bg-[#000000] text-white font-verdana text-base sm:text-xl font-bold p-2 sm:p-4 rounded-lg shadow-md"
-            : "bg-[#1f628c] text-white font-verdana text-base sm:text-xl font-bold p-2 sm:p-4 rounded-lg shadow-md"
-        } max-w-[85%] sm:max-w-[70%] break-words`}
-      >
-        {msg.text}
-      </p>
-    </div>
-                            ))}
-                            {/* Display typing effect */}
-                            {typingMessage && (
-                                <div className="flex items-start gap-5 justify-start">
-                                    <img src={assets.bbq_icon} alt="AI" className="w-10 rounded-full" />
-                                    <p className="bg-[#1f628c] text-white font-verdana  text-xl p-4 rounded-lg shadow-md max-w-[70%] break-words">
-                                        {typingMessage}
-                                    </p>
-                                </div>
-                            )}
-                        </div>
-                        {/* Response from AI */}
-                        {isSending ? (
-                            <div className='w-full flex flex-col gap-2.5'></div>
-                        ) : (
-                            <div>
-                                <div className="mt-6 flex gap-4">
-                                    {suggestions.map((suggestion, index) => (
-                                        <button
-                                            key={index}
-                                            className="bg-[#00796b] text-white font-verdana  text-l px-4 py-2 rounded-full shadow-md hover:bg-[#000000] transition-colors duration-300 text-sm md:text-base lg:text-lg"
-                                            onClick={() => sendMessage(suggestion)}
-                                        >
-                                            {suggestion}
-                                        </button>
-                                    ))}
-                                </div>
+                                    {msg.text}
+                                </p>
+                            </div>
+                        ))}
+                        {typingMessage && (
+                            <div className="flex items-start gap-5 justify-start">
+                                <img src={assets.bbq_icon} alt="AI" className="w-10 rounded-full" />
+                                <p className="bg-[#1f628c] text-white font-verdana text-xl p-4 rounded-lg shadow-md max-w-[70%] break-words">
+                                    {typingMessage}
+                                </p>
                             </div>
                         )}
                     </div>
-                )}
-                <br></br>
-                <br></br>
-                <br></br><br></br><br></br><br></br>
-
-
- <div className="fixed bottom-1 left-1/2 transform -translate-x-1/2 w-full max-w-3xl px-4 py-2 flex items-center justify-between gap-4 bg-white border-2 border-black shadow-lg rounded-lg sm:rounded-xl">
-  {/* Mic Icon */}
-  <img
-    src={assets.mic_icon}
-    alt="Mic"
-    className={`w-6 sm:w-7 cursor-pointer ${isSending ? 'opacity-50 cursor-not-allowed' : ''}`}
-    onClick={() => {
-      startVoiceInput();
-      playMicSound(); // Function to play the recognition sound
-    }}
-    disabled={isSending} // Disable when sending
-  />
-
-  {/* File Upload */}
-  <input
-    type="file"
-    accept="image/*,text/plain"
-    onChange={handleFileUpload}
-    className="hidden"
-    id="fileUpload"
-    disabled={isSending} // Disable when sending
-  />
-  <label htmlFor="fileUpload" className={`cursor-pointer ${isSending ? 'opacity-50 cursor-not-allowed' : ''}`}>
-    <img src={assets.gallery_icon} alt="Upload" className="w-6 sm:w-7" />
-  </label>
-
-  {/* Input Field */}
-  <input
-    onChange={(e) => setInput(e.target.value)}
-    value={input}
-    type="text"
-    placeholder={isSending ? 'Generating response...' : 'Enter your query here'}
-    onKeyDown={handleKeyDown}
-    className={`flex-1 bg-transparent border-none font-verdana outline-none p-2 text-sm sm:text-base md:text-lg lg:text-xl text-[#000000] break-words ${isSending ? 'opacity-50 cursor-not-allowed' : ''}`}
-    disabled={isSending} // Disable input when sending
-  />
-
-  <div className="flex items-center gap-3.5">
-    {/* Send Icon */}
+                    {isSending ? (
+                        <div className='w-full flex flex-col gap-2.5'></div>
+                    ) : (
+                        <div>
+                            {/* Suggestions Section */}
+                            {!isSending && showSuggestions && (
+            <div className="mt-6 flex gap-4 flex-wrap">
+                {suggestions.map((suggestion, index) => (
+                    <button
+                        key={index}
+                        className="bg-[#00796b] text-white font-verdana text-l px-4 py-2 rounded-full shadow-md hover:bg-[#000000] transition-colors duration-300 text-sm md:text-base lg:text-lg"
+                        onClick={() => sendMessage(suggestion)}
+                    >
+                        {suggestion}
+                    </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+                <div className="fixed bottom-1 left-1/2 transform -translate-x-1/2 w-full max-w-3xl px-4 py-2 flex items-center justify-between gap-4 bg-white border-2 border-black shadow-lg rounded-lg sm:rounded-xl">
     <img
-      onClick={() => input && sendMessage(input)}
-      src={assets.send_icon}
-      alt="Send"
-      className={`w-5 sm:w-6 cursor-pointer font-bold ${!input || isSending ? 'opacity-50 cursor-not-allowed' : ''}`}
-      disabled={!input || isSending} // Disable button when no input or when sending
+        src={assets.mic_icon}
+        alt="Mic"
+        className={`w-6 sm:w-7 cursor-pointer ${isSending ? 'opacity-50 cursor-not-allowed' : ''}`}
+        onClick={() => {
+            if (!isSending) {
+                playMicSound(); 
+                startVoiceInput(); 
+            }
+        }}
+        disabled={isSending}
     />
 
-    {/* Loader when sending */}
-    {isSending && (
-  <div className="relative flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 lg:w-12 lg:h-12">
-    {/* BBQ Logo with rounded shape and spinning animation */}
-    <img 
-      src={assets.bbq_icon}
-      alt="BBQ Logo" 
-      className="w-full h-full rounded-full object-contain animate-spin" 
-    />
-  </div>
-)}        
+                    <input
+                        type="file"
+                        accept="image/*,text/plain"
+                        onChange={handleFileUpload}
+                        className="hidden"
+                        id="fileUpload"
+                        disabled={isSending}
+                    />
+                    <label htmlFor="fileUpload" className={`cursor-pointer ${isSending ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                        <img src={assets.gallery_icon} alt="Upload" className="w-6 sm:w-7" />
+                    </label>
+    
+                {/* Input Field */}
+                <input
+                    onChange={(e) => setInput(e.target.value)}
+                    value={input}
+                    type="text"
+                    placeholder={isSending ? 'Generating response...' : 'Enter your query here'}
+                    onKeyDown={handleKeyDown}
+                    className={`flex-1 bg-transparent border-none font-verdana outline-none p-2 text-sm sm:text-base md:text-lg lg:text-xl text-[#000000] break-words ${isSending ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    disabled={isSending} // Disable input when sending
+                />
+    
+                <div className="flex items-center gap-3.5">
+                    {/* Send Icon */}
+                    <img
+                        onClick={() => input && sendMessage(input)}
+                        src={assets.send_icon}
+                        alt="Send"
+                        className={`w-5 sm:w-6 cursor-pointer font-bold ${!input || isSending ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        disabled={!input || isSending} // Disable button when no input or when sending
+                    />
+    
+                    {/* Loader when sending */}
+                    {isSending && (
+                        <div className="relative flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 lg:w-12 lg:h-12">
+                            {/* BBQ Logo with rounded shape and spinning animation */}
+                            <img
+                                src={assets.bbq_icon}
+                                alt="BBQ Logo"
+                                className="w-full h-full rounded-full object-contain animate-spin"
+                            />
+                        </div>
+                    )}
+                </div>
+                </div>
             </div>
         </div>
-            </div>
         </div>
     );
-    
 };
-
-export default Main;
+export default Main;    

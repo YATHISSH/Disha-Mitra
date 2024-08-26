@@ -32,12 +32,6 @@ UPLOAD_FOLDER = 'uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 templates = Jinja2Templates(directory="/backend/templates")
-
-# Define the route for the index page
-@app.get("/", response_class=HTMLResponse)
-async def index(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
-
 # Define the route for processing messages
 @app.post("/api/chat")
 async def process_message_route(message: Message):
@@ -82,6 +76,6 @@ async def process_document_route(file: UploadFile = File(...)):
 
 # Run the FastAPI app using Uvicorn
 if __name__ == "__main__":
-    worker.process_document()
+    worker.process_document() #Perists directory
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000, log_level="debug")

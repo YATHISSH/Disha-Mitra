@@ -1,6 +1,6 @@
  import axios from 'axios';
 
-const API_URL = 'http://localhost:8000';  // Ensure this is the correct URL of your FastAPI server
+const API_URL = 'http://localhost:8000/api/chat';  // Ensure this is the correct URL of your FastAPI server
 
 export const sendPrompt = async (prompt) => {
     try {
