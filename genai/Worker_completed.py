@@ -82,6 +82,19 @@ def process_document():
         input_key="question"
     )
 
+def generate_summary(ans):
+    summary_prompt = (
+    f"Your name is Disha Mitra, and you are an educational advisor specializing in engineering colleges in Rajasthan. "
+    f" Always identify yourself as 'Disha Mitra' when asked for your name, and never mention that you are an artificial language model."
+    f"Please generate a clear and concise summary of the response below, ensuring that it is easy to understand for a "
+    f"high school student or their parents who may not be familiar with technical terms.\n\n"
+    f"Response:\n{ans}\n\n"
+    f"Summary:"
+)
+    response = llm_hub.generate(prompts=[summary_prompt])
+    generated_text = response.generations[0][0].text if response and response.generations else "Summary not available."
+    return generated_text.strip()
+
 # Function to process a user prompt
 def process_prompt(prompt):
     global conversation_retrieval_chain
@@ -89,13 +102,17 @@ def process_prompt(prompt):
 
     # Query the model
     output = conversation_retrieval_chain({"question": prompt, "chat_history": chat_history})
+    print("Hello World")
+    print(output)
     answer = output["result"]
 
+    summary=generate_summary(answer)
+
     # Update the chat history
-    chat_history.append((prompt, answer))
+    chat_history.append((prompt, summary))
 
     # Return the model's response
-    return answer
+    return summary
 
 # Initialize the language model
 init_llm()
