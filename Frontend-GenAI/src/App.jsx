@@ -7,6 +7,7 @@ import UserData from './components/UserData/UserData';
 import UserProfile from './components/UserProfile/UserProfile';
 import ChatHistory from './components/ChatHistory/ChatHistory';
 import AdminPortal from './components/Admin/Admin';
+import CallInterface from './components/ColdCall/ColdCall';
 
 function App() {
   return (
@@ -19,7 +20,7 @@ function App() {
         <Route path="/userprofile" element={<UserProfile/>}/>
         <Route path="/chathistory" element={<ChatHistory/>}/>
         <Route path="/admin-portal" element={<AdminPortal/>}/>
-
+        <Route path="/cold-call" element={<CallInterface/>}/>
         {/* Protected Routes (Sidebar only visible here) */}
         <Route
           path="/chatbot"

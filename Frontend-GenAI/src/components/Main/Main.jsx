@@ -285,7 +285,7 @@ const Main = () => {
                 {!hasStartedChatting && (
        <div className="my-12 text-[38px] md:text-[50px] text-[#00796b] font-medium p-1">
         <p>
-            <span className="bg-gradient-to-r from-[#1b7474] via-[#1b7ab1] font-verdana font-bold to-[#065c52] bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-[#1b7474] via-[#1b7ab1] to-[#065c52] font-verdana font-bold  bg-clip-text text-transparent">
                 How can I assist your admission process today?
             </span>
         </p>
