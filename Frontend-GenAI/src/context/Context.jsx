@@ -8,12 +8,12 @@ const ContextProvider = (props) => {
     const [input, setInput] = useState("");
     const [recentPrompt, setRecentPrompt] = useState("");
     const [prevPrompts, setPrevPrompts] = useState([]);
-    const [chatHistory, setChatHistory] = useState([]);  // This will store the chat history
+    const [chatHistory, setChatHistory] = useState([]);  
     const [showResult, setShowResult] = useState(false);
     const [loading, setLoading] = useState(false);
     const [resultData, setResultData] = useState("");
     const [themeColor, setThemeColor] = useState("#e9f1f7");
-
+    
     // User Profile State
     const [userProfile, setUserProfile] = useState({
         group12: '',
@@ -33,6 +33,14 @@ const ContextProvider = (props) => {
         category: ''
     });
 
+    // State for Username
+    const [username, setUsername] = useState("");
+    const [useremail, setuseremail]=useState(""); // New state to store the username
+
+    const updateUsername = (name) => {
+        setUsername(name);
+    };
+
     const delayPara = (index, nextWord) => {
         setTimeout(() => {
             setResultData(prev => prev + nextWord);
@@ -40,7 +48,6 @@ const ContextProvider = (props) => {
     };
 
     const newChat = () => {
-        // Store the current chat session in the chat history before starting a new chat
         if (recentPrompt || resultData) {
             setChatHistory(prevHistory => [
                 ...prevHistory,
@@ -48,7 +55,6 @@ const ContextProvider = (props) => {
             ]); 
         }
 
-        // Reset states for a new chat
         setLoading(false);
         setShowResult(false);
         setRecentPrompt("");
@@ -87,7 +93,6 @@ const ContextProvider = (props) => {
             delayPara(i, nextWord + " ");
         }
 
-        // Update the chat history with the latest chat
         setChatHistory(prevHistory => [
             ...prevHistory,
             { prompt: recentPrompt, response: newResponse2 }
@@ -96,29 +101,27 @@ const ContextProvider = (props) => {
         setInput("");
     };
 
-    // Function to update user profile
     const updateUserProfile = (updatedProfile) => {
         setUserProfile(prev => ({ ...prev, ...updatedProfile }));
     };
 
-    // Function to get chat history
     const getChatHistory = () => {
         return chatHistory;
     };
 
-    // Function to edit a specific chat in the chat history
     const editChatHistory = (index, updatedChat) => {
         const updatedHistory = [...chatHistory];
         updatedHistory[index] = updatedChat;
         setChatHistory(updatedHistory);
     };
 
+    // Context value object to be provided to all components that use this context
     const contextValue = {
         prevPrompts,
         setPrevPrompts,
         chatHistory,
-        getChatHistory,  // Expose getChatHistory function
-        editChatHistory, // Expose editChatHistory function
+        getChatHistory,
+        editChatHistory,
         onSent,
         setRecentPrompt,
         recentPrompt,
@@ -129,8 +132,12 @@ const ContextProvider = (props) => {
         setInput,
         newChat,
         themeColor,
-        userProfile, // Include user profile in context
-        updateUserProfile // Function to update user profile
+        userProfile,
+        updateUserProfile,
+        username,  
+        updateUsername,
+        useremail,
+        setuseremail,
     };
 
     return (

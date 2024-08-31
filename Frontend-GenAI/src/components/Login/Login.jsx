@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useContext } from 'react'; // Import useContext
 import { FiMail } from "react-icons/fi";
 import { RiLockPasswordLine } from "react-icons/ri";
 import { Link, useNavigate } from 'react-router-dom';
+import { Context } from '../../context/Context'; // Import Context
 import { useForm } from 'react-hook-form';
 import * as yup from 'yup';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -17,6 +18,8 @@ const Login = () => {
   const [serverError, setServerError] = useState(null);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  const { updateUsername } = useContext(Context); // Extract updateUsername from context
 
   const { register, handleSubmit, formState: { errors } } = useForm({
     resolver: yupResolver(schema),
@@ -39,6 +42,8 @@ const Login = () => {
         });
 
         if (response.ok) {
+          const userData = await response.json(); // Get user data from the response
+          updateUsername(userData.username); // Update context with the username
           console.log('User logged in successfully');
           navigate('/userdata'); // Redirect to UserData page
         } else {
@@ -53,6 +58,7 @@ const Login = () => {
 
     setLoading(false);
   };
+
 
   return (
     <div className="flex justify-center items-center min-h-screen bg-gradient-to-r from-[#125151] via-[#187eb9] to-[#0a6e62] font-verdana text-white">

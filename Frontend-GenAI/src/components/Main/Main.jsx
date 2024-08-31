@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 /* eslint-disable react-hooks/exhaustive-deps */
 import { useContext, useState, useEffect, useRef } from 'react';
 import { assets } from '../../assets/assets';
@@ -32,7 +33,8 @@ const Main = () => {
     const chatContainerRef = useRef(null);
     const [hasStartedChatting, setHasStartedChatting] = useState(false);
     const recognitionRef = useRef(null);  
-    const [,setMessageSent] = useState(false); // Track if a message has been sent 
+    const [,setMessageSent] = useState(false);
+    const [showLanguageSelector, setShowLanguageSelector] = useState(false); // Track if a message has been sent 
     
     // Full list of short suggestions
     const allSuggestions = [
@@ -170,7 +172,7 @@ const Main = () => {
         setMessageSent(true); // Mark that a message has been sent
         
         try {
-            const response = await fetch('https://rightly-sunny-ibex.ngrok-free.app/api/chat', {
+            const response = await fetch('http://localhost:8000/api/chat', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -191,6 +193,9 @@ const Main = () => {
         setShowSuggestions(true); // Ensure suggestions are correctly toggled
     };
     
+    const toggleLanguageSelector = () => {
+        setShowLanguageSelector((prevState) => !prevState); // Toggles the language selector visibility
+      };
 
     const updateSuggestions = () => {
         setSuggestionIndex((prevIndex) => {
@@ -202,19 +207,27 @@ const Main = () => {
     const simulateTyping = (message) => {
         if (!message) return;
     
-        let currentIndex = 0;
+        setTypingMessage(''); // Ensure typing starts from an empty string
+        let currentIndex = 0; // Ensure the starting index is 0
+    
         const intervalId = setInterval(() => {
-            if (currentIndex < message.length) {
-                setTypingMessage((prev) => prev + message[currentIndex]);
+            setTypingMessage((prev) => {
+                // This function will add one character at a time to the message being typed
+                const newMessage = prev + message[currentIndex];
                 currentIndex++;
-            } else {
-                clearInterval(intervalId);
-                setMessages((prev) => [...prev, { sender: 'bot', text: message }]); // Save the final bot response
-                setTypingMessage(''); // Clear after setting
-                setIsSending(false); // Ensure sending is marked as false after typing
-            }
-        }, 12);
+    
+                if (currentIndex === message.length) {
+                    clearInterval(intervalId); // Clear interval when the message is fully typed
+                    setMessages((prevMessages) => [...prevMessages, { sender: 'bot', text: message }]); // Save the final bot response
+                    setTypingMessage(''); // Clear typing message after completion
+                    setIsSending(false); // Mark sending as false after typing is complete
+                }
+    
+                return newMessage;
+            });
+        }, 13); // Adjust typing speed as needed
     };
+    
     
     const handleCardClick = (text) => {
         sendMessage(text);
@@ -390,6 +403,17 @@ const Main = () => {
         }}
         disabled={isSending}
     />
+    <span
+  className={`material-symbols-outlined w-6 sm:w-7 cursor-pointer ${isSending ? 'opacity-50 cursor-not-allowed' : ''}`}
+  onClick={() => {
+    if (!isSending) {
+      toggleLanguageSelector(); // Add your function to handle language changes here
+    }
+  }}
+  disabled={isSending}
+>
+  translate
+</span>
 
                     <input
                         type="file"

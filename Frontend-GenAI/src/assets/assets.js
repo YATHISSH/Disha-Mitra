@@ -17,6 +17,7 @@ import bbq_icon from './BBQ_Logo.png'
 import recognition_sound from './recognition_sound.mp3'
 import suitcase_icon from './suitcase_icon.png'
 import college_icon from './college_icon.png'
+import translate_icon from './translate_icon.jpg'
 export const assets = {
     history_icon,
     menu_icon,
@@ -36,5 +37,6 @@ export const assets = {
     send_icon,
     recognition_sound,
     college_icon,
-    suitcase_icon
+    suitcase_icon,
+    translate_icon
 }

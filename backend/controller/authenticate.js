@@ -14,7 +14,7 @@ const loginUser =async(req,res)=>{
         if (!isMatch){
             return res.status(406).json({"error":1});
         }
-        return res.status(200).json({"error":0});
+        return res.status(200).json({"error":0,"username":user.name,"useremail":email});
     }
     catch(err){
         console.log("Error at logging in:",error);
