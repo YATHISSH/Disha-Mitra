@@ -34,7 +34,10 @@ const Main = () => {
     const [hasStartedChatting, setHasStartedChatting] = useState(false);
     const recognitionRef = useRef(null);  
     const [,setMessageSent] = useState(false);
-    const [showLanguageSelector, setShowLanguageSelector] = useState(false); // Track if a message has been sent 
+    const [showLanguageDropdown, setShowLanguageDropdown] = useState(false); 
+    const [currentLanguage, setCurrentLanguage] = useState('English');
+    const [showLanguageSelector, setShowLanguageSelector] = useState(false);
+    const [selectedLanguage, setSelectedLanguage] = useState('en'); 
     
     // Full list of short suggestions
     const allSuggestions = [
@@ -193,9 +196,18 @@ const Main = () => {
         setShowSuggestions(true); // Ensure suggestions are correctly toggled
     };
     
-    const toggleLanguageSelector = () => {
-        setShowLanguageSelector((prevState) => !prevState); // Toggles the language selector visibility
-      };
+    const handleLanguageIconClick = () => {
+        if (!isSending) {
+            setShowLanguageDropdown((prev) => !prev);
+        }
+    };
+
+    // Handle language selection
+    const handleLanguageChange = (language) => {
+        setCurrentLanguage(language); // Update selected language
+        setShowLanguageDropdown(false); // Close the dropdown after selection
+        // Add functionality to switch the app's language here
+    };
 
     const updateSuggestions = () => {
         setSuggestionIndex((prevIndex) => {
@@ -305,6 +317,24 @@ const Main = () => {
         </div>
         )}
                 {/* Cards Section */}
+                {showLanguageDropdown && (
+                <div className="fixed top-20 bg-gradient-to-r from-[#247267] to-[#00796b] right-4 z-30  shadow-md rounded-lg p-4 w-48 sm:w-60 md:w-72 lg:w-80">
+                <ul className="space-y-2 font-bold font-verdana text-white">
+                    {['English', 'Hindi - हिन्दी ', 'Punjabi - ਪੰਜਾਬੀ', 'Gujarati - ગુજરાતી', 'Tamil - தமிழ்'].map((language) => (
+                        <li
+                            key={language}
+                            className="cursor-pointer p-2 rounded-md transition-all duration-300 ease-in-out transform  hover:bg-[#48bcab] hover:text-black hover:scale-105 hover:shadow-lg"
+                            onClick={() => handleLanguageChange(language)}
+                        >
+                            {language}
+                        </li>
+                    ))}
+                </ul>
+            </div>
+            
+            
+                
+            )}
                 
 
                 {showCards && !showResult && (
@@ -404,16 +434,12 @@ const Main = () => {
         disabled={isSending}
     />
     <span
-  className={`material-symbols-outlined w-6 sm:w-7 cursor-pointer ${isSending ? 'opacity-50 cursor-not-allowed' : ''}`}
-  onClick={() => {
-    if (!isSending) {
-      toggleLanguageSelector(); // Add your function to handle language changes here
-    }
-  }}
-  disabled={isSending}
->
-  translate
-</span>
+                    className={`material-symbols-outlined w-6 sm:w-7 cursor-pointer ${isSending ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    onClick={handleLanguageIconClick}
+                    disabled={isSending}
+                >
+                    translate
+                </span>
 
                     <input
                         type="file"
