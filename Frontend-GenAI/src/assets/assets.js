@@ -18,6 +18,8 @@ import recognition_sound from './recognition_sound.mp3'
 import suitcase_icon from './suitcase_icon.png'
 import college_icon from './college_icon.png'
 import translate_icon from './translate_icon.jpg'
+import graph_icon from './graph_icon.jpg'
+import g_icon from './g_icon.png'
 export const assets = {
     history_icon,
     menu_icon,
@@ -38,5 +40,7 @@ export const assets = {
     recognition_sound,
     college_icon,
     suitcase_icon,
-    translate_icon
+    translate_icon,
+    graph_icon,
+    g_icon
 }

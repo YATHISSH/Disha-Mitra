@@ -1,20 +1,20 @@
 import os
 import torch
+import fitz  # PyMuPDF
 from dotenv import load_dotenv
 from langchain_core.prompts import PromptTemplate
 from langchain.chains import RetrievalQA
 from langchain_community.embeddings import HuggingFaceInstructEmbeddings
-from langchain_community.document_loaders import PyMuPDFLoader
+from langchain_community.document_loaders import PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_community.vectorstores import Chroma
-from langchain.schema import Document
+from langchain.vectorstores import FAISS
 from langchain_community.llms import HuggingFaceEndpoint
-import fitz  # PyMuPDF for advanced PDF text and table extraction
+from langchain.docstore.document import Document
 
 # Load environment variables
 load_dotenv()
 
-# Check for GPU availability and set the appropriate device for computation.
+# Check for GPU availability and set the appropriate device for computation
 DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
 
 # Global variables
@@ -28,50 +28,57 @@ def init_llm():
 
     # Set up the environment variable for HuggingFace and initialize the desired model
     os.environ["HUGGINGFACEHUB_API_TOKEN"] = os.getenv('HUGGING_FACE_TOKEN')
-    model_id = "mistralai/Mixtral-8x7B-Instruct-v0.1"
+    model_id = "mistralai/Mistral-7B-Instruct-v0.3"
     
-    # Initialize the model with the correct task
+    # Initialize the model with the correct task without overriding
     llm_hub = HuggingFaceEndpoint(
         repo_id=model_id, 
-        model_kwargs={"max_length": 1200},  # Adjusted for longer responses
-        task="text-generation"
+        model_kwargs={"max_length": 1000},
+        task="text-generation"  # Specify the task explicitly
     )
 
     # Initialize embeddings using a pre-trained model to represent the text data
     embeddings = HuggingFaceInstructEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
 
-# Function to process a PDF document and extract text and tables
-def process_document():
+# Function to process a PDF document
+def process_document(document_path):
     global conversation_retrieval_chain
 
-    # # Load the document with PyMuPDF
-    # doc = fitz.open(document_path)
-    # combined_text = ""
+    # Load the document with PyMuPDF
+    doc = fitz.open(document_path)
+    combined_text = ""
 
-    # # Iterate over each page to extract text and handle tables
-    # for page in doc:
-    #     text = page.get_text("text")  # Extract text
-    #     combined_text += text + "\n\n"  # Add extracted text to the combined text
+    # Iterate over each page to extract text
+    for page in doc:
+        text = page.get_text("text")  # Extract text
+        combined_text += text + "\n\n"  # Add extracted text to the combined text
 
-    #     # Optionally, extract tables as plain text (PyMuPDF has limited table extraction support)
-    #     # Here, we simulate table extraction by looking for multi-line text blocks
-    #     # This is a simple heuristic and might need adjustments based on the document structure.
-    #     for block in page.get_text("blocks"):
-    #         if len(block[4].splitlines()) > 1:  # Check for multi-line blocks
-    #             combined_text += "\n[Table Data]\n" + block[4] + "\n"
+        # Process each block and treat the first line as a heading/key, followed by related information
+        for block in page.get_text("blocks"):
+            lines = block[4].splitlines()
 
-    # # Split the document into chunks
-    # text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)  # Adjust chunking
-    # texts = text_splitter.split_text(combined_text)
+            if len(lines) > 1:  # Ensure there are at least two lines
+                heading = lines[0].strip()  # Treat the first line as the heading
+                details = " | ".join(line.strip() for line in lines[1:])  # Join the remaining lines as details
+                combined_text += f"{heading}: {details}\n"
+            else:
+                combined_text += block[4] + "\n"  # If it's a single line, just add it as-is
 
-    # # Convert the chunks into Document objects
-    # documents = [Document(page_content=text) for text in texts]
+    # Split the document into chunks
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=3000, chunk_overlap=200)  # Adjust chunking
+    texts = text_splitter.split_text(combined_text)
 
-    # # Create an embeddings database using Chroma from the split text chunks
-    # db = Chroma.from_documents(documents=documents, embedding=embeddings, persist_directory="./chroma_directory")
+    # Convert the chunks into Document objects
+    documents = [Document(page_content=text) for text in texts]
 
-    #Perists Directory
-    db=Chroma(persist_directory="./chroma_directory",embedding_function=embeddings)
+    # Create an embeddings database using FAISS from the split text chunks
+    db = FAISS.from_documents(documents=documents, embedding=embeddings)
+    
+    # Save the FAISS index to disk
+    db.save_local("./faiss_index")
+
+    # Load the saved FAISS index with dangerous deserialization allowed
+    db = FAISS.load_local("./faiss_index", embeddings, allow_dangerous_deserialization=True)
 
     # Build the QA chain, which utilizes the LLM and retriever for answering questions
     conversation_retrieval_chain = RetrievalQA.from_chain_type(
@@ -84,13 +91,13 @@ def process_document():
 
 def generate_summary(ans):
     summary_prompt = (
-    f"Your name is Disha Mitra, and you are an educational advisor specializing in engineering colleges in Rajasthan. "
-    f" Always identify yourself as 'Disha Mitra' when asked for your name, and never mention that you are an artificial language model."
-    f"Please generate a clear and concise summary of the response below, ensuring that it is easy to understand for a "
-    f"high school student or their parents who may not be familiar with technical terms.\n\n"
-    f"Response:\n{ans}\n\n"
-    f"Summary:"
-)
+        f"Your name is Disha Mitra, an educational advisor specializing in engineering colleges in Rajasthan. "
+        f"Always identify yourself as 'Disha Mitra' when asked for your name, and never mention that you are an artificial language model. "
+        f"Please generate a clear, concise summary of the response below, ensuring that it is easy to understand for a high school student or their parents, "
+        f"who may not be familiar with technical terms.\n\n"
+        f"Response:\n{ans}\n\n"
+        f"Summary:"
+    )
     response = llm_hub.generate(prompts=[summary_prompt])
     generated_text = response.generations[0][0].text if response and response.generations else "Summary not available."
     return generated_text.strip()
@@ -106,19 +113,20 @@ def process_prompt(prompt):
     print(output)
     answer = output["result"]
 
-    summary=generate_summary(answer)
+    # Generate and apply the summary
+    summary = generate_summary(answer)
 
     # Update the chat history
     chat_history.append((prompt, summary))
 
-    # Return the model's response
+    # Return the summary
     return summary
 
 # Initialize the language model
 init_llm()
 
-# # Process the provided PDF document
-# process_document("c:/Users/DB-L-077/Desktop/BBQ-SIH-24-1631/try.pdf")
+# Ensure the document is processed
+# process_document("path_to_your_pdf.pdf")
 
-# # Test processing a prompt
-# print(process_prompt("what are the expected cutoffs to get admissions in IIT Jodhpur?"))
+# Test processing a prompt
+# print(process_prompt("Example prompt here"))

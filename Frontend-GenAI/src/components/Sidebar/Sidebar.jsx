@@ -133,6 +133,13 @@ const Sidebar = () => {
                                 </span>
                                 <p>AI Cold Call</p>
                             </Link>
+                            {/* <Link to="/graph" className="flex items-center gap-2 p-3 rounded-full bg-[#2a2f33] cursor-pointer hover:bg-[#000000] hover:text-[#508ec5] text-white transition-colors duration-200">
+    <span className="material-icons text-white text-[20px]">
+        trending_up
+    </span>
+    <p>Graph View</p>
+</Link> */}
+
                             <button 
                                 onClick={() => navigate('/chathistory')}
                                 className="flex items-center gap-2 p-3 rounded-full bg-[#2a2f33] cursor-pointer hover:bg-[#000000] hover:text-[#508ec5] text-white transition-colors duration-200 md:p-3 sm:p-2"

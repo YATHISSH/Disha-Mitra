@@ -46,7 +46,8 @@ const Main = () => {
         "Admission deadlines",
         "Program details",
         "Entrance exams",
-        "Eligibility criteria"
+        "Eligibility criteria",
+        "Hostel Details"
     ];
     
     const playMicSound = () => {
@@ -475,16 +476,16 @@ const Main = () => {
                     />
     
                     {/* Loader when sending */}
-                    {isSending && (
-                        <div className="relative flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 lg:w-12 lg:h-12">
-                            {/* BBQ Logo with rounded shape and spinning animation */}
-                            <img
-                                src={assets.bbq_icon}
-                                alt="BBQ Logo"
-                                className="w-full h-full rounded-full object-contain animate-spin"
-                            />
-                        </div>
-                    )}
+{isSending && (
+    <div className="relative flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 lg:w-14 lg:h-14">
+        {/* BBQ Logo with rounded shape and spinning animation */}
+        <img
+            src={assets.bbq_icon}
+            alt="BBQ Logo"
+            className="w-full h-full rounded-full object-contain animate-spin"
+        />
+    </div>
+)}
                 </div>
                 </div>
             </div>
