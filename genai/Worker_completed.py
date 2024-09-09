@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from langchain_core.prompts import PromptTemplate
 from langchain.chains import RetrievalQA
 from langchain_community.embeddings import HuggingFaceInstructEmbeddings
+from langchain_nvidia_ai_endpoints import ChatNVIDIA
 from langchain_community.document_loaders import PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.vectorstores import FAISS
@@ -31,14 +32,31 @@ def init_llm():
     model_id = "mistralai/Mistral-7B-Instruct-v0.3"
     
     # Initialize the model with the correct task without overriding
-    llm_hub = HuggingFaceEndpoint(
-        repo_id=model_id, 
-        model_kwargs={"max_length": 1000},
-        task="text-generation"  # Specify the task explicitly
+    llm_hub = ChatNVIDIA(
+        model="meta/llama-3.1-8b-instruct",
+        api_key=os.getenv('NVIDIA_KEY'), 
+        temperature=0.2,
+        top_p=0.7,
+        max_tokens=1024,
     )
 
     # Initialize embeddings using a pre-trained model to represent the text data
     embeddings = HuggingFaceInstructEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+
+def load_faiss_index():
+    global conversation_retrieval_chain
+
+    # Load the saved FAISS index with dangerous deserialization allowed
+    db = FAISS.load_local("./faiss_index", embeddings, allow_dangerous_deserialization=True)
+
+    # Build the QA chain, which utilizes the LLM and retriever for answering questions
+    conversation_retrieval_chain = RetrievalQA.from_chain_type(
+        llm=llm_hub,
+        chain_type="stuff",
+        retriever=db.as_retriever(search_type="mmr", search_kwargs={'k': 6, 'lambda_mult': 0.25}),
+        return_source_documents=False,
+        input_key="question"
+    )
 
 # Function to process a PDF document
 def process_document(document_path):
@@ -77,19 +95,8 @@ def process_document(document_path):
     # Save the FAISS index to disk
     db.save_local("./faiss_index")
 
-    # Load the saved FAISS index with dangerous deserialization allowed
-    db = FAISS.load_local("./faiss_index", embeddings, allow_dangerous_deserialization=True)
-
-    # Build the QA chain, which utilizes the LLM and retriever for answering questions
-    conversation_retrieval_chain = RetrievalQA.from_chain_type(
-        llm=llm_hub,
-        chain_type="stuff",
-        retriever=db.as_retriever(search_type="mmr", search_kwargs={'k': 6, 'lambda_mult': 0.25}),
-        return_source_documents=False,
-        input_key="question"
-    )
-
 def generate_summary(ans):
+    # Prepare the summary prompt
     summary_prompt = (
         f"Your name is Disha Mitra, an educational advisor specializing in engineering colleges in Rajasthan. "
         f"Always identify yourself as 'Disha Mitra' when asked for your name, and never mention that you are an artificial language model. "
@@ -98,9 +105,15 @@ def generate_summary(ans):
         f"Response:\n{ans}\n\n"
         f"Summary:"
     )
-    response = llm_hub.generate(prompts=[summary_prompt])
-    generated_text = response.generations[0][0].text if response and response.generations else "Summary not available."
-    return generated_text.strip()
+
+    # Stream the response from the ChatNVIDIA client
+    response_text = ""
+    for chunk in llm_hub.stream([{"role": "user", "content": summary_prompt}]):
+        response_text += chunk.content
+
+    # Return the generated summary
+    return response_text.strip()
+
 
 # Function to process a user prompt
 def process_prompt(prompt):
@@ -124,6 +137,9 @@ def process_prompt(prompt):
 
 # Initialize the language model
 init_llm()
+
+# Load the FAISS index
+load_faiss_index()
 
 # Ensure the document is processed
 # process_document("path_to_your_pdf.pdf")

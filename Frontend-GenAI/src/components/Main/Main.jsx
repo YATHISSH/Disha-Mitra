@@ -176,7 +176,7 @@ const Main = () => {
         setMessageSent(true); // Mark that a message has been sent
         
         try {
-            const response = await fetch('http://localhost:8000/api/chat', {
+            const response = await fetch('https://rightly-sunny-ibex.ngrok-free.app/api/chat', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

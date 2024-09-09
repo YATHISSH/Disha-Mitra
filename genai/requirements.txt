@@ -2,6 +2,7 @@ fastapi
 torch
 langchain-core
 langchain-community
+langchain-nvidia-ai-endpoints
 pypdf
 sentence-transformers==2.2.2
 python-dotenv
