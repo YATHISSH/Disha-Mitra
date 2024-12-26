@@ -5,12 +5,12 @@ from dotenv import load_dotenv
 from langchain_core.prompts import PromptTemplate
 from langchain.chains import RetrievalQA
 from langchain_community.embeddings import HuggingFaceInstructEmbeddings
-from langchain_nvidia_ai_endpoints import ChatNVIDIA
 from langchain_community.document_loaders import PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.vectorstores import FAISS
 from langchain_community.llms import HuggingFaceEndpoint
 from langchain.docstore.document import Document
+import getpass
 
 # Load environment variables
 load_dotenv()
@@ -32,13 +32,12 @@ def init_llm():
     model_id = "mistralai/Mistral-7B-Instruct-v0.3"
     
     # Initialize the model with the correct task without overriding
-    llm_hub = ChatNVIDIA(
-        model="meta/llama-3.1-8b-instruct",
-        api_key=os.getenv('NVIDIA_KEY'), 
-        temperature=0.2,
-        top_p=0.7,
-        max_tokens=1024,
-    )
+    if "GROQ_API_KEY" not in os.environ:
+        os.environ["GROQ_API_KEY"] = getpass.getpass("Enter your Groq API key: ")
+
+    # Initialize the LLM
+    from langchain_groq import ChatGroq
+    llm_hub = ChatGroq(model="llama3-8b-8192")
 
     # Initialize embeddings using a pre-trained model to represent the text data
     embeddings = HuggingFaceInstructEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
@@ -46,19 +45,31 @@ def init_llm():
 def load_faiss_index():
     global conversation_retrieval_chain
 
-    # Load the saved FAISS index with dangerous deserialization allowed
-    db = FAISS.load_local("./faiss_index", embeddings, allow_dangerous_deserialization=True)
+    # Ensure embeddings are initialized
+    if embeddings is None:
+        raise ValueError("Embeddings model is not initialized.")
 
-    # Build the QA chain, which utilizes the LLM and retriever for answering questions
-    conversation_retrieval_chain = RetrievalQA.from_chain_type(
-        llm=llm_hub,
-        chain_type="stuff",
-        retriever=db.as_retriever(search_type="mmr", search_kwargs={'k': 6, 'lambda_mult': 0.25}),
-        return_source_documents=False,
-        input_key="question"
-    )
+    # Check if the FAISS index exists
+    if not os.path.exists("./faiss_index"):
+        print("FAISS index not found, processing the document to create the index...")
+        # If the index does not exist, you can process your document and create the FAISS index
+        # Ensure to call the function that processes the document and creates the FAISS index
+        # process_document("path_to_your_pdf.pdf")  # Provide the correct path to your PDF here
+        print("Index created successfully!")
+    else:
+        # Load the saved FAISS index with embeddings
+        db = FAISS.load_local("./faiss_index", embeddings,allow_dangerous_deserialization=True)
 
-# Function to process a PDF document
+        # Build the QA chain, which utilizes the LLM and retriever for answering questions
+        conversation_retrieval_chain = RetrievalQA.from_chain_type(
+            llm=llm_hub,
+            chain_type="stuff",
+            retriever=db.as_retriever(search_type="mmr", search_kwargs={'k': 6, 'lambda_mult': 0.25}),
+            return_source_documents=False,
+            input_key="question"
+        )
+        print("FAISS index loaded successfully.")
+
 def process_document(document_path):
     global conversation_retrieval_chain
 
@@ -69,6 +80,7 @@ def process_document(document_path):
     # Iterate over each page to extract text
     for page in doc:
         text = page.get_text("text")  # Extract text
+        print(text)
         combined_text += text + "\n\n"  # Add extracted text to the combined text
 
         # Process each block and treat the first line as a heading/key, followed by related information
@@ -141,8 +153,8 @@ init_llm()
 # Load the FAISS index
 load_faiss_index()
 
-# Ensure the document is processed
-# process_document("path_to_your_pdf.pdf")
+# # Ensure the document is processed
+# process_document("Rezume.pdf")
 
-# Test processing a prompt
-# print(process_prompt("Example prompt here"))
+# # Test processing a prompt
+# print(process_prompt("list out the tech tools"))
