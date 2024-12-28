@@ -366,61 +366,116 @@ const Main = () => {
                     </div>
                 )}
     
-                {/* Chat Section */}
-                <div ref={chatContainerRef} className='flex-1 px-[1%] overflow-y-auto scroll-auto mt-4 mb-16'>
-    <div className="my-10 flex flex-col gap-5">
-        {messages.map((msg, index) => (
+               {/* Chat Section */}
+               <div ref={chatContainerRef} className='flex-1 px-[1%] overflow-y-auto scroll-auto mt-4 mb-16'>
+        <div className="my-10 flex flex-col gap-5">
+        {messages.map((msg, index) => {
+    // Split the message text into lines
+    const lines = msg.text.split('\n');
+
+    // State to keep track of list items
+    let listItems = [];
+    let isOrderedList = false;
+    let isInsideList = false;
+
+    return (
+        <div
+            key={index}
+            className={`flex items-start gap-2 sm:gap-5 ${msg.sender === "user" ? "justify-end" : "justify-start"}`}
+            ref={index === messages.length - 1 ? lastMessageRef : null} // Attach ref to the last message
+        >
+            <img
+                src={msg.sender === "user" ? assets.user_icon : assets.bbq_icon}
+                alt={msg.sender}
+                className="w-8 sm:w-10 rounded-full"
+            />
             <div
-                key={index}
-                className={`flex items-start gap-2 sm:gap-5 ${msg.sender === "user" ? "justify-end" : "justify-start"}`}
-                ref={index === messages.length - 1 ? lastMessageRef : null} // Attach ref to the last message
+                className={`${
+                    msg.sender === "user"
+                        ? "bg-[#000000] text-white font-verdana text-base sm:text-xl p-2 sm:p-4 rounded-lg shadow-md"
+                        : "bg-[#1f628c] text-white font-verdana text-base sm:text-xl p-2 sm:p-4 rounded-lg shadow-md"
+                } max-w-[85%] sm:max-w-[70%] break-words whitespace-pre-wrap leading-relaxed`}
             >
-                                <img
-                                    src={msg.sender === "user" ? assets.user_icon : assets.bbq_icon}
-                                    alt={msg.sender}
-                                    className="w-8 sm:w-10 rounded-full"
-                                />
-                                <p
-                                    className={`${
-                                        msg.sender === "user"
-                                            ? "bg-[#000000] text-white font-verdana text-base sm:text-xl  p-2 sm:p-4 rounded-lg shadow-md"
-                                            : "bg-[#1f628c] text-white font-verdana text-base sm:text-xl  p-2 sm:p-4 rounded-lg shadow-md"
-                                    } max-w-[85%] sm:max-w-[70%] break-words`}
-                                >
-                                    {msg.text}
-                                </p>
-                            </div>
-                        ))}
-                        {typingMessage && (
-                            <div className="flex items-start gap-5 justify-start">
-                                <img src={assets.bbq_icon} alt="AI" className="w-10 rounded-full" />
-                                <p className="bg-[#1f628c] text-white font-verdana text-xl p-4 rounded-lg shadow-md max-w-[70%] break-words">
-                                    {typingMessage}
-                                </p>
-                            </div>
-                        )}
-                    </div>
-                    {isSending ? (
-                        <div className='w-full flex flex-col gap-2.5'></div>
-                    ) : (
-                        <div>
-                            {/* Suggestions Section */}
-                            {!isSending && showSuggestions && (
-            <div className="mt-6 flex gap-4 flex-wrap">
-                {suggestions.map((suggestion, index) => (
-                    <button
-                        key={index}
-                        className="bg-[#00796b] text-white font-verdana text-l px-4 py-2 rounded-full shadow-md hover:bg-[#000000] transition-colors duration-300 text-sm md:text-base lg:text-lg"
-                        onClick={() => sendMessage(suggestion)}
-                    >
-                        {suggestion}
-                    </button>
-                                    ))}
+                {lines.map((line, i) => {
+                    // Handle bold text
+                    const formattedLine = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+                    // Handle list items
+                    if (line.startsWith('- ') || line.startsWith('* ')) {
+                        if (isOrderedList) {
+                            // Close ordered list if we were inside it
+                            isInsideList = false;
+                            isOrderedList = false;
+                        }
+                        listItems.push(<li key={i} dangerouslySetInnerHTML={{ __html: formattedLine.substring(2) }} />);
+                        isInsideList = true;
+                    } else if (/^\d+\. /.test(line)) {
+                        if (!isOrderedList) {
+                            // Close unordered list if we were inside it
+                            if (listItems.length > 0) {
+                                const ulList = (
+                                    <ul className="list-disc ml-5 mb-2">{listItems}</ul>
+                                );
+                                listItems = []; // Reset listItems after rendering
+                                return ulList;
+                            }
+                            isOrderedList = true;
+                        }
+                        listItems.push(<li key={i} dangerouslySetInnerHTML={{ __html: formattedLine.substring(line.indexOf(' ') + 1) }} />);
+                        isInsideList = true;
+                    } else {
+                        if (isInsideList) {
+                            // Close current list if we were inside one
+                            isInsideList = false;
+                            const listToRender = isOrderedList
+                                ? <ol className="list-decimal ml-5 mb-2">{listItems}</ol>
+                                : <ul className="list-disc ml-5 mb-2">{listItems}</ul>;
+                            listItems = []; // Clear list items after rendering the list
+                            return listToRender;
+                        }
+                        return <p key={i} className="mb-2" dangerouslySetInnerHTML={{ __html: formattedLine }} />;
+                    }
+                })}
+                {isInsideList && (
+                    isOrderedList
+                        ? <ol className="list-decimal ml-5 mb-2">{listItems}</ol>
+                        : <ul className="list-disc ml-5 mb-2">{listItems}</ul>
+                )}
+            </div>
+        </div>
+    );
+})}
+
+                            {typingMessage && (
+                                <div className="flex items-start gap-5 justify-start">
+                                    <img src={assets.bbq_icon} alt="AI" className="w-10 rounded-full" />
+                                    <p className="bg-[#1f628c] text-white font-verdana text-xl p-4 rounded-lg shadow-md max-w-[70%] break-words">
+                                        {typingMessage}
+                                    </p>
                                 </div>
                             )}
                         </div>
-                    )}
-                </div>
+                        {isSending ? (
+                            <div className='w-full flex flex-col gap-2.5'></div>
+                        ) : (
+                            <div>
+                                {/* Suggestions Section */}
+                                {!isSending && showSuggestions && (
+                <div className="mt-6 flex gap-4 flex-wrap">
+                    {suggestions.map((suggestion, index) => (
+                        <button
+                            key={index}
+                            className="bg-[#00796b] text-white font-verdana text-l px-4 py-2 rounded-full shadow-md hover:bg-[#000000] transition-colors duration-300 text-sm md:text-base lg:text-lg"
+                            onClick={() => sendMessage(suggestion)}
+                        >
+                            {suggestion}
+                        </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
                 <div className="fixed bottom-1 left-1/2 transform -translate-x-1/2 w-full max-w-3xl px-4 py-2 flex items-center justify-between gap-4 bg-white border-2 border-black shadow-lg rounded-lg sm:rounded-xl">
     <img
         src={assets.mic_icon}
