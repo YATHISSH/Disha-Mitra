@@ -101,11 +101,14 @@ def process_document(document_path):
     # Convert the chunks into Document objects
     documents = [Document(page_content=text) for text in texts]
 
-    # Create an embeddings database using FAISS from the split text chunks
-    db = FAISS.from_documents(documents=documents, embedding=embeddings)
-    
-    # Save the FAISS index to disk
-    db.save_local("./faiss_index")
+    if os.path.exists("./faiss_index"):
+        # Load the existing FAISS index
+        db = FAISS.load_local("./faiss_index", embeddings,allow_dangerous_deserialization=True)
+        print("Loaded existing FAISS index.")
+    else:
+        # Create a new FAISS index if none exists
+        db = FAISS.from_documents([], embeddings)
+        print("Created a new FAISS index.")
 
 def generate_summary(ans):
     # Prepare the summary prompt
