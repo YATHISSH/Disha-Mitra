@@ -40,7 +40,7 @@ const registerUser = async (req, res) => {
     }
     catch(error){
         console.log("Error at signing up",error);
-        return res.status(400).json({"error":2});
+        return res.status(400).json({"error occured":2});
     }
 };
 
