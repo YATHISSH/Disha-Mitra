@@ -15,8 +15,6 @@
     "@hookform/resolvers": "^3.9.0",
     "@mui/icons-material": "^5.16.7",
     "axios": "^1.7.2",
-    "bbq-ieee": "file:",
-    "BBQ-IEEE": "file:",
     "bbq-sih-1631": "file:",
     "chart.js": "^4.4.4",
     "dotenv": "^16.4.5",

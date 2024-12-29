@@ -12,7 +12,6 @@ const Sidebar = () => {
     const navigate = useNavigate();
 
     useEffect(() => {
-        // Handle screen resize to adjust sidebar extension
         const handleResize = () => {
             if (window.innerWidth >= 768) {
                 setExtended(true); 
