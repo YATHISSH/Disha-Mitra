@@ -120,11 +120,11 @@ const Sidebar = () => {
                                 </span>
                                 <p>Elite Colleges</p>
                             </Link>
-                            <Link to="/placements" className="flex items-center gap-2 p-3 rounded-full bg-[#2a2f33] cursor-pointer hover:bg-[#000000] hover:text-[#508ec5] text-white transition-colors duration-200">
+                            <Link to="/AR-view" className="flex items-center gap-2 p-3 rounded-full bg-[#2a2f33] cursor-pointer hover:bg-[#000000] hover:text-[#508ec5] text-white transition-colors duration-200">
                                 <span className="material-symbols-outlined text-white text-[20px]">
-                                    work
+                                view_in_ar
                                 </span>
-                                <p>Scholarships</p>
+                                <p>AR-View</p>
                             </Link>
                             <Link to="/cold-call" className="flex items-center gap-2 p-3 rounded-full bg-[#2a2f33] cursor-pointer hover:bg-[#000000] hover:text-[#508ec5] text-white transition-colors duration-200">
                                 <span className="material-symbols-outlined text-white text-[20px]">

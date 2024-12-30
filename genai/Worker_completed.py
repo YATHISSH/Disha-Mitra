@@ -1,6 +1,6 @@
 import os
 import torch
-import fitz  # PyMuPDF
+import fitz  
 from dotenv import load_dotenv
 from langchain_core.prompts import PromptTemplate
 from langchain.chains import RetrievalQA
@@ -12,13 +12,13 @@ from langchain_community.llms import HuggingFaceEndpoint
 from langchain.docstore.document import Document
 import getpass
 
-# Load environment variables
+
 load_dotenv()
 
-# Check for GPU availability and set the appropriate device for computation
+
 DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
 
-# Global variables
+
 conversation_retrieval_chain = None
 chat_history = []
 llm_hub = None
@@ -27,40 +27,35 @@ embeddings = None
 def init_llm():
     global llm_hub, embeddings
 
-    # Set up the environment variable for HuggingFace and initialize the desired model
+    
     os.environ["HUGGINGFACEHUB_API_TOKEN"] = os.getenv('HUGGING_FACE_TOKEN')
     model_id = "mistralai/Mistral-7B-Instruct-v0.3"
     
-    # Initialize the model with the correct task without overriding
     if "GROQ_API_KEY" not in os.environ:
         os.environ["GROQ_API_KEY"] = getpass.getpass("Enter your Groq API key: ")
 
-    # Initialize the LLM
+  
     from langchain_groq import ChatGroq
     llm_hub = ChatGroq(model="llama3-8b-8192")
 
-    # Initialize embeddings using a pre-trained model to represent the text data
     embeddings = HuggingFaceInstructEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
 
 def load_faiss_index():
     global conversation_retrieval_chain
 
-    # Ensure embeddings are initialized
+    
     if embeddings is None:
         raise ValueError("Embeddings model is not initialized.")
 
-    # Check if the FAISS index exists
     if not os.path.exists("./faiss_index"):
         print("FAISS index not found, processing the document to create the index...")
-        # If the index does not exist, you can process your document and create the FAISS index
-        # Ensure to call the function that processes the document and creates the FAISS index
-        # process_document("path_to_your_pdf.pdf")  # Provide the correct path to your PDF here
+       
         print("Index created successfully!")
     else:
-        # Load the saved FAISS index with embeddings
+        
         db = FAISS.load_local("./faiss_index", embeddings,allow_dangerous_deserialization=True)
 
-        # Build the QA chain, which utilizes the LLM and retriever for answering questions
+        
         conversation_retrieval_chain = RetrievalQA.from_chain_type(
             llm=llm_hub,
             chain_type="stuff",
@@ -101,14 +96,11 @@ def process_document(document_path):
     # Convert the chunks into Document objects
     documents = [Document(page_content=text) for text in texts]
 
-    if os.path.exists("./faiss_index"):
-        # Load the existing FAISS index
-        db = FAISS.load_local("./faiss_index", embeddings,allow_dangerous_deserialization=True)
-        print("Loaded existing FAISS index.")
-    else:
-        # Create a new FAISS index if none exists
-        db = FAISS.from_documents([], embeddings)
-        print("Created a new FAISS index.")
+    # Create an embeddings database using FAISS from the split text chunks
+    db = FAISS.from_documents(documents=documents, embedding=embeddings)
+    
+    # Save the FAISS index to disk
+    db.save_local("./faiss_index")
 
 def generate_summary(ans):
     # Prepare the summary prompt
