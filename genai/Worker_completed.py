@@ -4,7 +4,7 @@ import fitz
 from dotenv import load_dotenv
 from langchain_core.prompts import PromptTemplate
 from langchain.chains import RetrievalQA
-from langchain_community.embeddings import HuggingFaceInstructEmbeddings
+from langchain_community.embeddings import HuggingFaceEmbeddings 
 from langchain_community.document_loaders import PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.vectorstores import FAISS
@@ -24,21 +24,20 @@ chat_history = []
 llm_hub = None
 embeddings = None
 
+
 def init_llm():
     global llm_hub, embeddings
 
-    
     os.environ["HUGGINGFACEHUB_API_TOKEN"] = os.getenv('HUGGING_FACE_TOKEN')
-    model_id = "mistralai/Mistral-7B-Instruct-v0.3"
     
     if "GROQ_API_KEY" not in os.environ:
         os.environ["GROQ_API_KEY"] = getpass.getpass("Enter your Groq API key: ")
 
-  
     from langchain_groq import ChatGroq
     llm_hub = ChatGroq(model="llama3-8b-8192")
 
-    embeddings = HuggingFaceInstructEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+    # Replace HuggingFaceInstructEmbeddings with HuggingFaceEmbeddings
+    embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
 
 def load_faiss_index():
     global conversation_retrieval_chain
@@ -101,6 +100,7 @@ def process_document(document_path):
     
     # Save the FAISS index to disk
     db.save_local("./faiss_index")
+    load_faiss_index()
 
 def generate_summary(ans):
     # Prepare the summary prompt
