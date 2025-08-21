@@ -10,7 +10,8 @@ import AdminPortal from "./components/Admin/Admin";
 import CallInterface from "./components/ColdCall/ColdCall";
 import Graph from "./components/Graph/Graph";
 import PanoramaViewer from "./components/PanoramaViewer";
-import ScenePage from "./components/ScenePage"; // Import the ScenePage component
+import ScenePage from "./components/ScenePage";
+import Assessment from "./Assesment";
 
 function App() {
   return (
@@ -27,6 +28,7 @@ function App() {
         <Route path="/graph" element={<Graph />} />
         <Route path="/AR-view" element={<PanoramaViewer />} />
         <Route path="/AR-view/:sceneId" element={<ScenePage />} />
+        <Route path="/assesment" element={<Assessment />} />
 
         {/* Protected Routes (Sidebar only visible here) */}
         <Route

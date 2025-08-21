@@ -71,7 +71,7 @@ async def process_document_route(file: UploadFile = File(...)):
         # Process the uploaded document using the worker module
         worker.process_document(file_path)
 
-        return JSONResponse(content={
+        return JSONResponse(content={ 
             "botResponse": "Thank you for providing your PDF document. I have analyzed it, so now you can ask me any questions regarding it!"
         }, status_code=200)
     except Exception as e:
@@ -82,7 +82,7 @@ async def process_document_route(file: UploadFile = File(...)):
 @app.post("/generate-quiz")
 async def generate_quiz_route():
     try:
-        total_questions = 30  # Target number of questions
+        total_questions = 15  # Target number of questions
         batch_size = 15  # Number of questions per batch
         collected_questions = []
 

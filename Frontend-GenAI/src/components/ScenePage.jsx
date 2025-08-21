@@ -10,18 +10,18 @@ const scenes = {
   },
   secondScene: {
     id: "secondScene",
-    title: "Placement Training Hall",
-    imageSource: "https://i.postimg.cc/j2vwNjKZ/ppic.jpg",
+    title: "College Entrance",
+    imageSource: "https://i.postimg.cc/J79P4R4j/Whats-App-Image-2024-12-30-at-12-07-27-AM.jpg",
   },
   thirdScene: {
     id: "thirdScene",
-    title: "Interview Preparation Lab",
-    imageSource: "https://upload.wikimedia.org/wikipedia/commons/a/a9/Interview_room.jpg",
+    title: "Lift Facilities",
+    imageSource: "https://i.postimg.cc/KvPV61r1/Whats-App-Image-2024-12-30-at-12-07-28-AM.jpg",
   },
   fourthScene: {
     id: "fourthScene",
-    title: "Research & Development Lab",
-    imageSource: "https://upload.wikimedia.org/wikipedia/commons/9/95/Research_lab.jpg",
+    title: "Reception",
+    imageSource: "https://i.postimg.cc/d3bY4gYg/Whats-App-Image-2024-12-30-at-12-07-25-AM-1.jpg",
   },
   fifthScene: {
     id: "fifthScene",

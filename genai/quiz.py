@@ -18,7 +18,7 @@ def enhance_and_generate_mcqs_from_pdf(num_questions=15):
     if "GROQ_API_KEY" not in os.environ:
         os.environ["GROQ_API_KEY"] = "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"
 
-    client = ChatGroq(model="llama3-8b-8192")
+    client = ChatGroq(model="llama-3.1-8b-instant")
 
     # Step 4: Initialize Educhain client
     llm_config = LLMConfig(custom_model=client)

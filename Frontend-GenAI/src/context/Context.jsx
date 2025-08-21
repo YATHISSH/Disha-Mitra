@@ -115,7 +115,7 @@ const ContextProvider = (props) => {
         setChatHistory(updatedHistory);
     };
 
-    // Context value object to be provided to all components that use this context
+
     const contextValue = {
         prevPrompts,
         setPrevPrompts,
