@@ -289,7 +289,7 @@ const Main = () => {
                             </div>
                         </div>
                     )}
-                    <Link to="/userprofile" className="cursor-pointer">
+                    <Link to="" className="cursor-pointer">
                         <img src={assets.user_icon} alt="User" className="w-10 rounded-full" />
                     </Link>
                 </div>

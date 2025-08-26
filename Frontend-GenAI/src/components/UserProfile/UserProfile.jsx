@@ -15,7 +15,7 @@ const UserProfile = () => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        updateUserProfile(profileData); // Update context with new profile data
+        updateUserProfile(""); // Update context with new profile data
         alert('Profile updated successfully!');
     };
 

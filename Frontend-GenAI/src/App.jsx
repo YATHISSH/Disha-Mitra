@@ -8,7 +8,7 @@ import UserProfile from "./components/UserProfile/UserProfile";
 import ChatHistory from "./components/ChatHistory/ChatHistory";
 import AdminPortal from "./components/Admin/Admin";
 import CallInterface from "./components/ColdCall/ColdCall";
-import Graph from "./components/Graph/Graph";
+
 import PanoramaViewer from "./components/PanoramaViewer";
 import ScenePage from "./components/ScenePage";
 
@@ -38,7 +38,7 @@ function App() {
         <Route path="/chathistory" element={<ChatHistory />} />
         <Route path="/admin-portal" element={<AdminPortal />} />
         <Route path="/cold-call" element={<CallInterface />} />
-        <Route path="/graph" element={<Graph />} />
+      
         
         {/* Legacy AR Routes - keeping for backward compatibility */}
         <Route path="/AR-view" element={<PanoramaViewer />} />
