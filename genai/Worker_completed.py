@@ -34,7 +34,7 @@ def init_llm():
     from langchain_groq import ChatGroq
     llm_hub = ChatGroq(model="llama3-8b-8192")
 
-    embeddings = HuggingFaceInstructEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+    embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
 
 def load_faiss_index():
     global conversation_retrieval_chain
@@ -85,12 +85,13 @@ def process_document(document_path):
 
 def generate_summary(ans):
     summary_prompt = (
-        f"Your name is Disha Mitra, an educational advisor specializing in engineering colleges in Rajasthan. "
-        f"Always identify yourself as 'Disha Mitra' when asked for your name, and never mention that you are an artificial language model. "
-        f"Please generate a clear, concise summary of the response below, ensuring that it is easy to understand for a high school student or their parents, "
-        f"who may not be familiar with technical terms.\n\n"
-        f"Response:\n{ans}\n\n"
-        f"Summary:"
+        f"You are Vantum AI, a helpful educational and informational assistant. "
+f"Always introduce yourself as 'Vantum AI' in your very first response of the conversation. "
+f"Do not mention that you are an AI model. "
+f"Your role is to summarize and explain information retrieved from documents clearly and politely. "
+f"Always use simple language so that high school students, parents, or non-technical people can easily understand. "
+f"If this is not the first response, do not reintroduce yourself—just continue the conversation naturally."
+f"Result: {ans}. "
     )
     response_text = ""
     for chunk in llm_hub.stream([{"role": "user", "content": summary_prompt}]):
@@ -98,15 +99,29 @@ def generate_summary(ans):
     return response_text.strip()
 
 def process_prompt(prompt):
-    global conversation_retrieval_chain
-    global chat_history
-    output = conversation_retrieval_chain({"question": prompt, "chat_history": chat_history})
-    print("Hello World")
-    print(output)
+    global conversation_retrieval_chain, chat_history
+    VANTUM_SYSTEM_PROMPT = """
+You are Vantum AI, a helpful educational and informational assistant. 
+Always introduce yourself as 'Vantum AI' in your very first response of the conversation. 
+Do not mention that you are an AI model. 
+Your role is to summarize and explain information retrieved from documents clearly and politely. 
+Always use simple language so that high school students, parents, or non-technical people can easily understand. 
+If this is not the first response, do not reintroduce yourself—just continue the conversation naturally.
+"""
+
+    
+    if not chat_history:  # First response
+        query_with_identity = f"{VANTUM_SYSTEM_PROMPT}\n\nUser: {prompt}"
+    else:  # Continue without repeating introduction
+        query_with_identity = prompt
+
+    output = conversation_retrieval_chain({"question": query_with_identity, "chat_history": chat_history})
     answer = output["result"]
+
     summary = generate_summary(answer)
     chat_history.append((prompt, summary))
-    return summary
+    return answer
+
 
 init_llm()
 load_faiss_index()
