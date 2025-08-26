@@ -8,7 +8,7 @@ const Sidebar = () => {
     // Retrieve user information from the context
     const { newChat, prevPrompts, chatHistory, username: contextUsername } = useContext(Context);
     const [extended, setExtended] = useState(false);
-    const [username, setUsername] = useState(localStorage.getItem('username') || contextUsername || ''); // Initialize with localStorage or context username
+    const [username, setUsername] = useState(localStorage.getItem('username') || contextUsername || '');
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -36,7 +36,7 @@ const Sidebar = () => {
                     const response = await axios.get('http://localhost:3001/auth/login'); 
                     const fetchedUsername = response.data.username;
                     setUsername(fetchedUsername);
-                    localStorage.setItem('username', fetchedUsername); // Store in localStorage
+                    localStorage.setItem('username', fetchedUsername);
                 } catch (error) {
                     console.error('Error fetching user data:', error);
                 }
@@ -44,16 +44,27 @@ const Sidebar = () => {
         };
 
         fetchUserData();
-    }, [contextUsername]); // Run this effect if contextUsername changes
+    }, [contextUsername]);
 
     const handleToggle = () => {
         setExtended((prev) => !prev);
     };
 
     const handleLogout = () => {
-        localStorage.removeItem('username'); // Remove username from localStorage on logout
-        setUsername(''); // Clear the state
+        localStorage.removeItem('username');
+        setUsername('');
         navigate('/');
+    };
+
+    // Function to handle navigation and close sidebar
+    const handleNavigateAndClose = (path) => {
+        navigate(path);
+        setExtended(false); // Close the sidebar
+    };
+
+    // Function to handle Link clicks and close sidebar
+    const handleLinkClick = () => {
+        setExtended(false); // Close the sidebar when any Link is clicked
     };
 
     return (
@@ -69,7 +80,7 @@ const Sidebar = () => {
             </span>
 
             {/* Sidebar Container */}
-            <div className={`fixed top-0 left-0 z-40 h-full w-[200px] lg:w-[220px] bg-gradient-to-br from-[#1c1e1f] to-[#1c2120] shadow-lg p-4 text-[#ffffff] transform ${extended ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out`}>
+            <div className={`fixed top-0 left-0 z-40 h-full w-[240px] lg:w-[260px] bg-gradient-to-br from-[#1c1e1f] to-[#1c2120] shadow-lg p-4 text-[#ffffff] transform ${extended ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out`}>
                 <div className="flex flex-col h-full font-verdana">
                     {/* Logo */}
                     <img src={assets.bbq_icon} alt="Logo" className="w-24 mx-auto mb-4 rounded-full" />
@@ -80,7 +91,7 @@ const Sidebar = () => {
                         className="font-bold text-sm flex items-center gap-2 p-3 bg-[#197e71] rounded-full cursor-pointer hover:bg-[#27719e] transition-colors duration-200"
                     >
                         <img src={assets.plus_icon} alt="new chat" className="w-5" />
-                        <p className="font-verdana">New Chat</p>
+                        <p className="font-verdana">New Session</p>
                     </button>
 
                     {/* Sidebar Menu */}
@@ -90,11 +101,11 @@ const Sidebar = () => {
                             {prevPrompts.map((prompt, index) => (   
                                 <button 
                                     key={index} 
-                                    onClick={() => navigate('/chathistory')}
+                                    onClick={() => handleNavigateAndClose('/chathistory')}
                                     className="flex items-center gap-2 p-3 rounded-full text-white cursor-pointer hover:bg-[#333333] transition-colors duration-200"
                                 >
                                     <img src={assets.chat_icon} alt={prompt} className="w-5" />
-                                    <p className="text-sm font-medium">{prompt}</p>
+                                    <p className="text-sm font-medium truncate">{prompt}</p>
                                 </button>
                             ))}
                         </div>
@@ -102,69 +113,199 @@ const Sidebar = () => {
                             {chatHistory.map((chat, index) => (
                                 <button 
                                     key={index} 
-                                    onClick={() => navigate('/chathistory')}
+                                    onClick={() => handleNavigateAndClose('/chathistory')}
                                     className="flex items-center gap-2 p-3 rounded-full text-white cursor-pointer hover:bg-[#333333] transition-colors duration-200"
                                 >
                                     <img src={assets.chat_icon} alt={chat.prompt} className="w-5" />
-                                    <p className="text-sm font-medium">{chat.prompt}</p>
+                                    <p className="text-sm font-medium truncate">{chat.prompt}</p>
                                 </button>
                             ))}
                         </div>
 
-                        <p className="text-[#f6c636] font-semibold text-md mt-6 mb-3">ENHANCEMENTS</p>
+                        <p className="text-[#f6c636] font-semibold text-md mt-6 mb-3">FEATURES</p>
                         <div className="flex flex-col gap-2">
-                            {/* Enhancements Links */}
-                            <Link to="/elite-colleges" className="flex items-center gap-2 p-3 rounded-full bg-[#2a2f33] cursor-pointer hover:bg-[#000000] hover:text-[#508ec5] text-white transition-colors duration-200">
+                            {/* Document Library */}
+                            <Link 
+                                to="/document-library" 
+                                onClick={handleLinkClick}
+                                className="flex items-center gap-2 p-3 rounded-full bg-[#2a2f33] cursor-pointer hover:bg-[#000000] hover:text-[#508ec5] text-white transition-colors duration-200"
+                            >
                                 <span className="material-symbols-outlined text-white text-[20px]">
-                                    school
+                                    folder_open
                                 </span>
-                                <p>Elite Colleges</p>
+                                <p>Document Library</p>
                             </Link>
-                            <Link to="/AR-view" className="flex items-center gap-2 p-3 rounded-full bg-[#2a2f33] cursor-pointer hover:bg-[#000000] hover:text-[#508ec5] text-white transition-colors duration-200">
-                                <span className="material-symbols-outlined text-white text-[20px]">
-                                view_in_ar
-                                </span>
-                                <p>AR-View</p>
-                            </Link>
-                            <Link to="/cold-call" className="flex items-center gap-2 p-3 rounded-full bg-[#2a2f33] cursor-pointer hover:bg-[#000000] hover:text-[#508ec5] text-white transition-colors duration-200">
-                                <span className="material-symbols-outlined text-white text-[20px]">
-                                    call
-                                </span>
-                                <p>AI Cold Call</p>
-                            </Link>
-                            {/* <Link to="/graph" className="flex items-center gap-2 p-3 rounded-full bg-[#2a2f33] cursor-pointer hover:bg-[#000000] hover:text-[#508ec5] text-white transition-colors duration-200">
-    <span className="material-icons text-white text-[20px]">
-        trending_up
-    </span>
-    <p>Graph View</p>
-</Link> */}
 
+                            {/* Analytics Dashboard */}
+                            <Link 
+                                to="/analytics" 
+                                onClick={handleLinkClick}
+                                className="flex items-center gap-2 p-3 rounded-full bg-[#2a2f33] cursor-pointer hover:bg-[#000000] hover:text-[#508ec5] text-white transition-colors duration-200"
+                            >
+                                <span className="material-symbols-outlined text-white text-[20px]">
+                                    analytics
+                                </span>
+                                <p>Analytics Hub</p>
+                            </Link>
+
+                            {/* Team Workspace */}
+                            <Link 
+                                to="/team-workspace" 
+                                onClick={handleLinkClick}
+                                className="flex items-center gap-2 p-3 rounded-full bg-[#2a2f33] cursor-pointer hover:bg-[#000000] hover:text-[#508ec5] text-white transition-colors duration-200"
+                            >
+                                <span className="material-symbols-outlined text-white text-[20px]">
+                                    groups
+                                </span>
+                                <p>Team Workspace</p>
+                            </Link>
+
+                            {/* Knowledge Base */}
+                            <Link 
+                                to="/knowledge-base" 
+                                onClick={handleLinkClick}
+                                className="flex items-center gap-2 p-3 rounded-full bg-[#2a2f33] cursor-pointer hover:bg-[#000000] hover:text-[#508ec5] text-white transition-colors duration-200"
+                            >
+                                <span className="material-symbols-outlined text-white text-[20px]">
+                                    psychology
+                                </span>
+                                <p>Knowledge Base</p>
+                            </Link>
+
+                            {/* Integration Hub */}
+                            <Link 
+                                to="/integrations" 
+                                onClick={handleLinkClick}
+                                className="flex items-center gap-2 p-3 rounded-full bg-[#2a2f33] cursor-pointer hover:bg-[#000000] hover:text-[#508ec5] text-white transition-colors duration-200"
+                            >
+                                <span className="material-symbols-outlined text-white text-[20px]">
+                                    hub
+                                </span>
+                                <p>Integration Hub</p>
+                            </Link>
+
+                            {/* Security Center */}
+                            <Link 
+                                to="/security" 
+                                onClick={handleLinkClick}
+                                className="flex items-center gap-2 p-3 rounded-full bg-[#2a2f33] cursor-pointer hover:bg-[#000000] hover:text-[#508ec5] text-white transition-colors duration-200"
+                            >
+                                <span className="material-symbols-outlined text-white text-[20px]">
+                                    security
+                                </span>
+                                <p>Security Center</p>
+                            </Link>
+
+                            {/* API Management */}
+                            <Link 
+                                to="/api-management" 
+                                onClick={handleLinkClick}
+                                className="flex items-center gap-2 p-3 rounded-full bg-[#2a2f33] cursor-pointer hover:bg-[#000000] hover:text-[#508ec5] text-white transition-colors duration-200"
+                            >
+                                <span className="material-symbols-outlined text-white text-[20px]">
+                                    api
+                                </span>
+                                <p>API Management</p>
+                            </Link>
+
+                            {/* Previous Sessions */}
                             <button 
-                                onClick={() => navigate('/chathistory')}
+                                onClick={() => handleNavigateAndClose('/chathistory')}
                                 className="flex items-center gap-2 p-3 rounded-full bg-[#2a2f33] cursor-pointer hover:bg-[#000000] hover:text-[#508ec5] text-white transition-colors duration-200 md:p-3 sm:p-2"
                             >
                                 <span className="material-symbols-outlined text-white text-[20px]">
                                     history
                                 </span>
-                                <p className="text-sm md:text-base">Previous Chats</p>
+                                <p className="text-sm md:text-base">Session History</p>
                             </button>
+                        </div>
+
+                        {/* Divider */}
+                        <div className="border-t border-gray-600 mt-4 pt-4">
+                            <p className="text-[#f6c636] font-semibold text-md mb-3">ADMIN TOOLS</p>
+                            <div className="flex flex-col gap-2">
+                                {/* User Management */}
+                                <Link 
+                                    to="/user-management" 
+                                    onClick={handleLinkClick}
+                                    className="flex items-center gap-2 p-3 rounded-full bg-[#2a2f33] cursor-pointer hover:bg-[#000000] hover:text-[#508ec5] text-white transition-colors duration-200"
+                                >
+                                    <span className="material-symbols-outlined text-white text-[20px]">
+                                        manage_accounts
+                                    </span>
+                                    <p>User Management</p>
+                                </Link>
+
+                                {/* System Settings */}
+                                <Link 
+                                    to="/settings" 
+                                    onClick={handleLinkClick}
+                                    className="flex items-center gap-2 p-3 rounded-full bg-[#2a2f33] cursor-pointer hover:bg-[#000000] hover:text-[#508ec5] text-white transition-colors duration-200"
+                                >
+                                    <span className="material-symbols-outlined text-white text-[20px]">
+                                        settings
+                                    </span>
+                                    <p>System Settings</p>
+                                </Link>
+
+                                {/* Audit Logs */}
+                                <Link 
+                                    to="/audit-logs" 
+                                    onClick={handleLinkClick}
+                                    className="flex items-center gap-2 p-3 rounded-full bg-[#2a2f33] cursor-pointer hover:bg-[#000000] hover:text-[#508ec5] text-white transition-colors duration-200"
+                                >
+                                    <span className="material-symbols-outlined text-white text-[20px]">
+                                        assignment
+                                    </span>
+                                    <p>Audit Logs</p>
+                                </Link>
+                            </div>
                         </div>
                     </div>
 
                     {/* User Info and Logout Section */}
-                    <div className="mt-6">
+                    <div className="mt-6 border-t border-gray-600 pt-4">
+                        {/* User Role Badge */}
+                        <div className="flex items-center justify-between mb-2 p-2 rounded-lg bg-[#004d40]">
+                            <div className="flex items-center gap-2">
+                                <span className="material-symbols-outlined text-[#80cbc4] text-[16px]">
+                                    badge
+                                </span>
+                                <p className="text-xs text-[#80cbc4]">Enterprise User</p>
+                            </div>
+                        </div>
+
                         {/* User Icon and Username */}
                         <div className="flex items-center gap-2 mb-4 p-3 rounded-full hover:bg-[#000000] hover:text-[#508ec5] bg-[#2a2f33] text-white">
                             <img src={assets.user_icon} alt="User" className="w-6 h-6 rounded-full" />
-                            <p className="text-sm md:text-base">{ username || 'User'}</p>
+                            <div className="flex-1">
+                                <p className="text-sm md:text-base font-medium">{username || 'User'}</p>
+                                <p className="text-xs text-gray-400">Active Session</p>
+                            </div>
+                        </div>
+
+                        {/* Quick Actions */}
+                        <div className="flex gap-2 mb-3">
+                            <button className="flex-1 flex items-center justify-center gap-1 p-2 rounded-lg bg-[#2a2f33] hover:bg-[#000000] text-white transition-colors duration-200">
+                                <span className="material-symbols-outlined text-[16px]">
+                                    help
+                                </span>
+                                <p className="text-xs">Help</p>
+                            </button>
+                            <button className="flex-1 flex items-center justify-center gap-1 p-2 rounded-lg bg-[#2a2f33] hover:bg-[#000000] text-white transition-colors duration-200">
+                                <span className="material-symbols-outlined text-[16px]">
+                                    support
+                                </span>
+                                <p className="text-xs">Support</p>
+                            </button>
                         </div>
 
                         {/* Logout */}
-                        <div onClick={handleLogout} className="flex items-center gap-2 p-3 rounded-full cursor-pointer hover:bg-[#1f8071] text-white transition-colors duration-200">
+                        <div onClick={handleLogout} className="flex items-center gap-2 p-3 rounded-full cursor-pointer hover:bg-[#d32f2f] text-white transition-colors duration-200 border border-gray-600">
                             <span className="material-symbols-outlined text-white text-[20px]">
                                 logout
                             </span>
-                            <p className="font-bold">Logout</p>
+                            <p className="font-bold">Sign Out</p>
                         </div>
                     </div>
                 </div>

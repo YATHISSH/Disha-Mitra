@@ -45,7 +45,8 @@ const Login = () => {
           const userData = await response.json(); // Get user data from the response
           updateUsername(userData.username); // Update context with the username
           console.log('User logged in successfully');
-          navigate('/userdata'); // Redirect to UserData page
+          navigate('/chatbot'); // Redirect to UserData page
+
         } else {
           const { message } = await response.json();
           setServerError(message || 'An error occurred. Please try again.');
