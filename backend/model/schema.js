@@ -23,4 +23,16 @@ const issueSchema=mongoose.Schema({
  "others": {type:String,required:true},
 })
 
-module.exports={userSchema,issueSchema}
+const documentSchema = mongoose.Schema({
+    name: { type: String, required: true },
+    category: { type: String, required: true },
+    type: { type: String, required: true },
+    size: { type: String, required: true },
+    url: { type: String, required: true },
+    cloudinaryId: { type: String, required: true },
+    uploadedBy: { type: String },
+    uploadDate: { type: Date, default: Date.now },
+    status: { type: String, default: 'active', enum: ['active', 'archived'] }
+});
+
+module.exports={userSchema,issueSchema,documentSchema}
