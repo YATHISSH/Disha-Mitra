@@ -73,3 +73,56 @@ export const deleteDocument = async (documentId) => {
         throw error;
     }
 };
+// User Management APIs
+export const createUser = async (companyId, name, email, password, role) => {
+    try {
+        const response = await axios.post(`${BACKEND_URL}/auth/create-user`, {
+            companyId,
+            name,
+            email,
+            password,
+            role
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error creating user:', error);
+        throw error;
+    }
+};
+
+export const listUsersByCompany = async (companyId) => {
+    try {
+        const response = await axios.get(`${BACKEND_URL}/auth/users/${companyId}`);
+        return response.data.users || [];
+    } catch (error) {
+        console.error('Error fetching users:', error);
+        throw error;
+    }
+};
+
+// Role Management APIs
+export const createRole = async (companyId, name, description, permissions, color) => {
+    try {
+        const response = await axios.post(`${BACKEND_URL}/role/create`, {
+            company_id: companyId,
+            name,
+            description,
+            permissions,
+            color
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error creating role:', error);
+        throw error;
+    }
+};
+
+export const listRolesByCompany = async (companyId) => {
+    try {
+        const response = await axios.get(`${BACKEND_URL}/role/list/${companyId}`);
+        return response.data.roles || [];
+    } catch (error) {
+        console.error('Error fetching roles:', error);
+        throw error;
+    }
+};
