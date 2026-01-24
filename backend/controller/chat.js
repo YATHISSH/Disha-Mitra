@@ -6,16 +6,17 @@ const PYTHON_API_URL = 'http://localhost:8000/api/chat';
 // Send chat message and store in history
 const sendChatMessage = async (req, res) => {
     try {
-        const { userMessage } = req.body;
-        const userId = req.user.id;
-        const companyId = req.user.company_id;
+        const rawMessage = (req.body.userMessage ?? req.body.message);
+        const userId = (req.user?.id) || req.body.userId || 0;
+        const companyId = (req.user?.company_id) || req.company_id;
 
-        if (!userMessage || !userMessage.trim()) {
+        if (!rawMessage || !rawMessage.trim()) {
             return res.status(400).json({ error: 'User message is required' });
         }
+        const userMessage = rawMessage.trim();
 
-        if (!userId || !companyId) {
-            return res.status(401).json({ error: 'User information not found in token' });
+        if (!companyId) {
+            return res.status(401).json({ error: 'Company ID is required' });
         }
 
         // Call Python API to get bot response

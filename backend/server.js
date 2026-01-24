@@ -7,6 +7,8 @@ const issueRoute=require("./routes/issueRoute");
 const documentRoutes=require("./routes/documentRoutes");
 const roleRoutes=require("./routes/roleRoutes");
 const teamChatRoutes=require("./routes/teamChatRoutes");
+const externalApiRoutes=require("./routes/externalApiRoutes");
+const apiKeyRoutes=require("./routes/apiKeyRoutes");
 const cors=require("cors");
 const jwt=require("jsonwebtoken");
 const { TeamChat } = require("./model/collection");
@@ -31,6 +33,8 @@ app.use("/issue",issueRoute);
 app.use("/document",documentRoutes);
 app.use("/role",roleRoutes);
 app.use("/team-chat",teamChatRoutes);
+app.use("/api/v1", externalApiRoutes);
+app.use("/api-keys",apiKeyRoutes);
 
 // Socket.io authentication middleware
 io.use((socket, next) => {

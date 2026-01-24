@@ -21,8 +21,8 @@ const PYTHON_API_URL = 'http://localhost:8000/process-document';
 const uploadDocument = async (req, res) => {
     try {
         const { category } = req.body;
-        const userId = req.user?.id;
-        const companyId = req.user?.company_id;
+        const userId = (req.user?.id) || null;
+        const companyId = (req.user?.company_id) || req.company_id;
         
         if (!req.file) {
             return res.status(400).json({ error: 'No file provided' });
@@ -33,7 +33,7 @@ const uploadDocument = async (req, res) => {
         }
 
         if (!companyId) {
-            return res.status(401).json({ error: 'Company ID not found in token' });
+            return res.status(401).json({ error: 'Company ID not provided' });
         }
 
         // Upload file to Cloudinary from buffer

@@ -253,3 +253,72 @@ export const uploadPDF = async (file) => {
         throw error;
     }
 };
+
+// API Key Management APIs
+export const createAPIKey = async (name, permissions, expiresInDays) => {
+    try {
+        const response = await axios.post(`${BACKEND_URL}/api-keys/generate`, {
+            name,
+            permissions,
+            expiresInDays
+        }, {
+            headers: getAuthHeaders()
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error creating API key:', error);
+        throw error;
+    }
+};
+
+export const listAPIKeys = async () => {
+    try {
+        const response = await axios.get(`${BACKEND_URL}/api-keys/list`, {
+            headers: getAuthHeaders()
+        });
+        return response.data.apiKeys || [];
+    } catch (error) {
+        console.error('Error fetching API keys:', error);
+        throw error;
+    }
+};
+
+export const revokeAPIKey = async (id) => {
+    try {
+        const response = await axios.delete(`${BACKEND_URL}/api-keys/${id}/revoke`, {
+            headers: getAuthHeaders()
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error revoking API key:', error);
+        throw error;
+    }
+};
+
+export const regenerateAPIKey = async (id) => {
+    try {
+        const response = await axios.post(`${BACKEND_URL}/api-keys/${id}/regenerate`, {}, {
+            headers: getAuthHeaders()
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error regenerating API key:', error);
+        throw error;
+    }
+};
+
+// API Usage Analytics
+export const getAPIUsageAnalytics = async (period = '24h', keyId = null) => {
+    try {
+        const params = new URLSearchParams();
+        params.append('period', period);
+        if (keyId) params.append('keyId', keyId);
+        const response = await axios.get(`${BACKEND_URL}/api-keys/analytics/usage?${params.toString()}`, {
+            headers: getAuthHeaders()
+        });
+        return response.data.data;
+    } catch (error) {
+        console.error('Error fetching API usage analytics:', error);
+        throw error;
+    }
+};

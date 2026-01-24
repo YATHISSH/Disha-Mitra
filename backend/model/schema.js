@@ -149,4 +149,47 @@ teamChatSchema.pre('save', async function(next) {
     next();
 });
 
-module.exports={userSchema,issueSchema,documentSchema,companySchema,roleSchema,chatHistorySchema,teamChatSchema}
+const apiKeySchema = mongoose.Schema({
+    id: { type: Number, unique: true, sparse: true },
+    company_id: { type: Number, required: true },
+    key: { type: String, required: true, unique: true },
+    name: { type: String, required: true },
+    created_by: { type: Number, required: true },
+    created_at: { type: Date, default: Date.now },
+    last_used_at: { type: Date },
+    expires_at: { type: Date },
+    is_active: { type: Boolean, default: true },
+    permissions: { type: [String], default: ['upload', 'chat'] },
+    usage_count: { type: Number, default: 0 },
+    rate_limit: { type: Number, default: 100 } // requests per hour
+});
+
+// Pre-save hook for APIKey
+apiKeySchema.pre('save', async function(next) {
+    if (!this.id) {
+        this.id = await getNextId('APIKey');
+    }
+    next();
+});
+
+const apiKeyUsageSchema = mongoose.Schema({
+    id: { type: Number, unique: true, sparse: true },
+    api_key_id: { type: Number, required: true },
+    company_id: { type: Number, required: true },
+    endpoint: { type: String },
+    method: { type: String },
+    status_code: { type: Number },
+    ip_address: { type: String },
+    user_agent: { type: String },
+    duration_ms: { type: Number },
+    timestamp: { type: Date, default: Date.now }
+});
+
+apiKeyUsageSchema.pre('save', async function(next) {
+    if (!this.id) {
+        this.id = await getNextId('APIKeyUsage');
+    }
+    next();
+});
+
+module.exports={userSchema,issueSchema,documentSchema,companySchema,roleSchema,chatHistorySchema,teamChatSchema,apiKeySchema,apiKeyUsageSchema}

@@ -13,7 +13,7 @@ load_dotenv()
 # Configuration from environment (set these in .env or environment)
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 EMBED_MODEL = "text-embedding-004"  # New Gemini embedding model
-CHAT_MODEL = "gemini-3-flash-preview"  # New Gemini chat model
+CHAT_MODEL = "gemini-2.5-flash-lite"  # New Gemini chat model
 
 PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
 PINECONE_ENV = os.getenv("PINECONE_ENV")
