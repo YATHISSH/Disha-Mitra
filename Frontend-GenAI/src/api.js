@@ -19,6 +19,41 @@ export const getCompanyId = () => {
     return 1;
 };
 
+// Get user details from localStorage
+export const getUserDetails = () => {
+    const userDetails = localStorage.getItem('user_details');
+    if (userDetails) {
+        return JSON.parse(userDetails);
+    }
+    return null;
+};
+
+// Team Chat API - Get chat history
+export const getTeamChatHistory = async () => {
+    try {
+        const response = await axios.get(`${BACKEND_URL}/team-chat/history`, {
+            headers: getAuthHeaders()
+        });
+        return response.data.messages;
+    } catch (error) {
+        console.error('Error fetching team chat history:', error);
+        throw error;
+    }
+};
+
+// Private Chat API - Get chat history with another user
+export const getPrivateChatHistory = async (otherUserId) => {
+    try {
+        const response = await axios.get(`${BACKEND_URL}/team-chat/private/history/${otherUserId}`, {
+            headers: getAuthHeaders()
+        });
+        return response.data.messages;
+    } catch (error) {
+        console.error('Error fetching private chat history:', error);
+        throw error;
+    }
+};
+
 export const sendPrompt = async (prompt) => {
     try {
         const response = await axios.post(`${BACKEND_URL}/issue/chat`, {

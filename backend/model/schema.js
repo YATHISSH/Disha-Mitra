@@ -126,4 +126,27 @@ chatHistorySchema.pre('save', async function(next) {
     next();
 });
 
-module.exports={userSchema,issueSchema,documentSchema,companySchema,roleSchema,chatHistorySchema}
+const teamChatSchema = mongoose.Schema({
+    id: { type: Number, unique: true, sparse: true },
+    company_id: { type: Number, required: true },
+    // sender
+    user_id: { type: Number, required: true },
+    user_name: { type: String, required: true },
+    // optional recipient for private chats
+    to_user_id: { type: Number },
+    to_user_name: { type: String },
+    // category: team or private
+    category: { type: String, enum: ['team', 'private'], default: 'team' },
+    message: { type: String, required: true },
+    timestamp: { type: Date, default: Date.now }
+});
+
+// Pre-save hook for TeamChat
+teamChatSchema.pre('save', async function(next) {
+    if (!this.id) {
+        this.id = await getNextId('TeamChat');
+    }
+    next();
+});
+
+module.exports={userSchema,issueSchema,documentSchema,companySchema,roleSchema,chatHistorySchema,teamChatSchema}
