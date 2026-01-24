@@ -1,7 +1,7 @@
  import axios from 'axios';
 
 const API_URL = 'http://localhost:8000/api/chat';  // Ensure this is the correct URL of your FastAPI server
-const BACKEND_URL = 'http://localhost:3001';
+const BACKEND_URL = 'https://disha-mitra-0elc.onrender.com';
 
 // Get JWT token from localStorage
 const getAuthHeaders = () => {
