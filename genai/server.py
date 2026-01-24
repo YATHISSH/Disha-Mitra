@@ -1,5 +1,6 @@
 import logging
 import os
+import time
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -9,6 +10,16 @@ import Worker_completed as worker  # Import the worker module
 
 # Initialize FastAPI app
 app = FastAPI()
+server_start_time = time.time()
+
+# Health check endpoint
+@app.get("/health")
+async def health():
+    return JSONResponse(content={
+        "status": "ok",
+        "uptime_ms": int((time.time() - server_start_time) * 1000),
+        "timestamp": time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
+    }, status_code=200)
 
 # Pydantic models
 class Message(BaseModel):

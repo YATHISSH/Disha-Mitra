@@ -16,6 +16,7 @@ const PORT=3001;
 
 const app=express();
 const server=http.createServer(app);
+const serverStartTime = Date.now();
 const io=socketIo(server, {
     cors: {
         origin: "http://localhost:5173",
@@ -27,6 +28,15 @@ const io=socketIo(server, {
 app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended:true}));
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+    res.status(200).json({
+        status: 'ok',
+        uptime_ms: Math.round(Date.now() - serverStartTime),
+        timestamp: new Date().toISOString()
+    });
+});
 
 app.use("/auth",authRoutes);
 app.use("/issue",issueRoute);
