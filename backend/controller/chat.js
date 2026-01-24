@@ -1,7 +1,7 @@
 const axios = require('axios');
 const { ChatHistory } = require('../model/collection');
 
-const PYTHON_API_URL = 'http://localhost:8000/api/chat';
+const PYTHON_API_URL = process.env.PYTHON_API_URL || 'http://localhost:8000/api/chat';
 
 // Send chat message and store in history
 const sendChatMessage = async (req, res) => {
