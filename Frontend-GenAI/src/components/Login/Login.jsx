@@ -7,6 +7,7 @@ import { useForm } from 'react-hook-form';
 import * as yup from 'yup';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { AiFillEye, AiFillEyeInvisible } from "react-icons/ai";
+import { loginUser } from '../../api';
 
 const schema = yup.object().shape({
   email: yup.string().email('Invalid email format').required('Email is required'),
@@ -33,27 +34,33 @@ const Login = () => {
       navigate('/admin-portal'); 
     } else {
       try {
-        const response = await fetch('http://localhost:3001/auth/login', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(data),
-        });
-
-        if (response.ok) {
-          const userData = await response.json(); // Get user data from the response
-          updateUsername(userData.username); // Update context with the username
+        const userData = await loginUser(data.email, data.password);
+        
+        if (userData && userData.token) {
+          
+          // Store JWT token
+          localStorage.setItem('jwtToken', userData.token);
+          
+          // Store user details as object
+          const userDetails = {
+            id: userData.user.id,
+            name: userData.user.name,
+            email: userData.user.email,
+            companyId: userData.user.company_id,
+            isActive: userData.user.is_active
+          };
+          localStorage.setItem('user_details', JSON.stringify(userDetails));
+          localStorage.setItem('username', userData.user.name); // For context
+          
+          updateUsername(userData.user.name); // Update context with the username
           console.log('User logged in successfully');
           navigate('/chatbot'); // Redirect to UserData page
 
-        } else {
-          const { message } = await response.json();
-          setServerError(message || 'An error occurred. Please try again.');
         }
       } catch (error) {
+        const errorMessage = error.response?.data?.message || 'An error occurred. Please try again.';
+        setServerError(errorMessage);
         console.error('Error during login:', error);
-        setServerError('Internal server error');
       }
     }
 

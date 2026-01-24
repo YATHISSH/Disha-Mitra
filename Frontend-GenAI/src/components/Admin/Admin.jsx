@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { uploadPDF } from '../../api';
 
 const AdminPortal = () => {
   const [pdf, setPdf] = useState(null);
@@ -10,18 +11,13 @@ const AdminPortal = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const formData = new FormData();
-    formData.append('pdf', pdf);
 
     try {
-      const response = await fetch('http://localhost:3001/upload-pdf', {
-        method: 'POST',
-        body: formData,
-      });
-      const result = await response.json();
-      setStatus(result.message);
+      const response = await uploadPDF(pdf);
+      setStatus(response.message);
     } catch (error) {
-      setStatus('Error uploading PDF');
+      const errorMessage = error.response?.data?.message || 'Error uploading PDF';
+      setStatus(errorMessage);
     }
   };
 

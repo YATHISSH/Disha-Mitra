@@ -5,6 +5,7 @@ import { assets } from '../../assets/assets';
 import { Context } from '../../context/Context';
 import { Link } from 'react-router-dom';
 import Tesseract from 'tesseract.js';
+import { sendChat } from '../../api';
 
 const shuffleArray = (array) => {
     let currentIndex = array.length, randomIndex;
@@ -172,18 +173,10 @@ const Main = () => {
         setMessageSent(true);
         
         try {
-            const response = await fetch('http://localhost:8000/api/chat', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ userMessage: message }),
-            });
-    
-            const data = await response.json();
-            console.log(data.botResponse);
-    
-            simulateTyping(data.botResponse);
+            const botResponse = await sendChat(message);
+            console.log(botResponse);
+
+            simulateTyping(botResponse);
         } catch (error) {
             console.error('Error sending message to server:', error);
             setIsSending(false);

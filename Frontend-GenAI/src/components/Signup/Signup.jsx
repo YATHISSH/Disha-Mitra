@@ -7,6 +7,7 @@ import { useForm } from 'react-hook-form';
 import * as yup from 'yup';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { AiFillEye, AiFillEyeInvisible } from "react-icons/ai";
+import { companySignup } from '../../api';
 
 const schema = yup.object().shape({
   companyName: yup.string().required('Company Name is required'),
@@ -49,38 +50,29 @@ const SignUp = () => {
     setLoading(true);
     setServerError(null);
     try {
-      const response = await fetch('http://localhost:3001/auth/company-signup', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          companyName: data.companyName,
-          industryType: data.industryType,
-          adminName: data.adminName,
-          adminEmail: data.adminEmail,
-          adminPassword: data.adminPassword,
-          companyAddress: data.companyAddress,
-          city: data.city,
-          state: data.state,
-          postalCode: data.postalCode,
-          phoneNumber: data.phoneNumber,
-          employees: parseInt(data.employees) || 0,
-          website: data.website || ''
-        }),
+      const response = await companySignup({
+        companyName: data.companyName,
+        industryType: data.industryType,
+        adminName: data.adminName,
+        adminEmail: data.adminEmail,
+        adminPassword: data.adminPassword,
+        companyAddress: data.companyAddress,
+        city: data.city,
+        state: data.state,
+        postalCode: data.postalCode,
+        phoneNumber: data.phoneNumber,
+        employees: parseInt(data.employees) || 0,
+        website: data.website || ''
       });
 
-      const responseData = await response.json();
-
-      if (response.ok) {
+      if (response) {
         console.log('Company registered successfully');
         navigate('/'); // Redirect to login page
-      } else {
-        setServerError(responseData.message || 'An error occurred. Please try again.');
       }
     } catch (error) {
+      const errorMessage = error.response?.data?.message || 'Internal server error';
+      setServerError(errorMessage);
       console.error('Error during company signup:', error);
-      setServerError('Internal server error');
     } finally {
       setLoading(false);
     }

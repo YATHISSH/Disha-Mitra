@@ -1,24 +1,52 @@
 const mongoose=require("mongoose");
+const jwt = require('jsonwebtoken');
 const {User,Company}=require("../model/collection");
 
 mongoose.connect(process.env.MONGO_URI);
+
+const generateToken = (user) => {
+    return jwt.sign(
+        { 
+            id: user.id, 
+            email: user.email, 
+            name: user.name,
+            company_id: user.company_id 
+        },
+        process.env.JWT_SECRET || 'your_secret_key',
+        { expiresIn: '7d' }
+    );
+};
 
 const loginUser =async(req,res)=>{
     try{
         const {email,password}=req.body;
         const user=await User.findOne({email});
         if (!user){
-            return res.status(400).json({"error":2});
+            return res.status(400).json({"error":2, "message": "User not found"});
         }
         const isMatch=(user.password==password);
         if (!isMatch){
-            return res.status(406).json({"error":1});
+            return res.status(406).json({"error":1, "message": "Incorrect password"});
         }
-        return res.status(200).json({"error":0,"username":user.name,"useremail":email});
+        
+        const token = generateToken(user);
+        
+        return res.status(200).json({
+            "error":0,
+            "message": "Login successful",
+            "token": token,
+            "user": {
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                company_id: user.company_id,
+                is_active: user.is_active
+            }
+        });
     }
     catch(err){
-        console.log("Error at logging in:",error);
-        return res.status(400).json({"error":3});
+        console.log("Error at logging in:",err);
+        return res.status(400).json({"error":3, "message": "Server error"});
     }
 }
 

@@ -1,5 +1,6 @@
 const cloudinary = require('cloudinary').v2;
 const mongoose = require('mongoose');
+const axios = require('axios');
 const { documentSchema } = require('../model/schema');
 require('dotenv').config();
 
@@ -13,10 +14,15 @@ cloudinary.config({
 // Create Document model
 const Document = mongoose.model('Document', documentSchema);
 
+// Python microservice URL
+const PYTHON_API_URL = 'http://localhost:8000/process-document';
+
 // Upload Document
 const uploadDocument = async (req, res) => {
     try {
         const { category } = req.body;
+        const userId = req.user?.id;
+        const companyId = req.user?.company_id;
         
         if (!req.file) {
             return res.status(400).json({ error: 'No file provided' });
@@ -26,13 +32,18 @@ const uploadDocument = async (req, res) => {
             return res.status(400).json({ error: 'Category is required' });
         }
 
+        if (!companyId) {
+            return res.status(401).json({ error: 'Company ID not found in token' });
+        }
+
         // Upload file to Cloudinary from buffer
         const uploadStream = cloudinary.uploader.upload_stream(
             {
-                resource_type: 'auto',
+                resource_type: 'raw',
                 folder: 'documents',
                 public_id: `${Date.now()}_${req.file.originalname.split('.')[0]}`,
                 type: 'upload',
+                flags: 'attachment',
             },
             async (error, result) => {
                 if (error) {
@@ -55,6 +66,18 @@ const uploadDocument = async (req, res) => {
 
                     const savedDocument = await document.save();
                     
+                    // Process document for Pinecone indexing (async, don't wait)
+                    processDocumentForPinecone(
+                        result.secure_url,
+                        companyId,
+                        userId,
+                        savedDocument.id,
+                        req.file.originalname,
+                        category
+                    ).catch(err => {
+                        console.error('Error processing document for Pinecone:', err);
+                    });
+                    
                     res.status(201).json({
                         message: 'Document uploaded successfully',
                         document: savedDocument,
@@ -71,6 +94,36 @@ const uploadDocument = async (req, res) => {
     } catch (error) {
         console.error('Error uploading document:', error);
         res.status(500).json({ error: 'Internal server error' });
+    }
+};
+
+// Process document for Pinecone indexing
+const processDocumentForPinecone = async (documentUrl, companyId, userId, pdfId, source, category) => {
+    try {
+        const formData = new URLSearchParams();
+        formData.append('companyId', companyId);
+        if (userId) formData.append('userId', userId);
+        formData.append('pdfId', pdfId);
+        formData.append('source', source);
+        formData.append('url', documentUrl);
+        if (category) formData.append('category', category);
+
+        const response = await axios.post(
+            PYTHON_API_URL,
+            formData,
+            {
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                timeout: 120000 // 2 minute timeout for document processing
+            }
+        );
+
+        console.log('Document processed and indexed in Pinecone:', response.data);
+        return response.data;
+    } catch (error) {
+        console.error('Error calling Python microservice:', error.message);
+        throw error;
     }
 };
 

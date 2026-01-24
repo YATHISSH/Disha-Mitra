@@ -1,6 +1,7 @@
 const express = require('express');
 const multer = require('multer');
 const documentController = require('../controller/document');
+const { verifyToken } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -33,9 +34,9 @@ const upload = multer({
 });
 
 // Routes
-router.post('/upload', upload.single('file'), documentController.uploadDocument);
-router.get('/list', documentController.listDocuments);
-router.delete('/:documentId', documentController.deleteDocument);
-router.get('/download/:documentId', documentController.downloadDocument);
+router.post('/upload', verifyToken, upload.single('file'), documentController.uploadDocument);
+router.get('/list', verifyToken, documentController.listDocuments);
+router.delete('/:documentId', verifyToken, documentController.deleteDocument);
+router.get('/download/:documentId', verifyToken, documentController.downloadDocument);
 
 module.exports = router;

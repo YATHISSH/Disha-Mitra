@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { createUser, listUsersByCompany, createRole, listRolesByCompany } from '../../api';
+import { createUser, listUsersByCompany, createRole, listRolesByCompany, getCompanyId } from '../../api';
 
 const UserManagement = () => {
     const navigate = useNavigate();
@@ -31,8 +31,8 @@ const UserManagement = () => {
     });
     const [selectedPermissions, setSelectedPermissions] = useState([]);
 
-    // Get company ID from localStorage (set during signup/login)
-    const companyId = localStorage.getItem('companyId') || 1;
+    // Get company ID from user_details
+    const companyId = getCompanyId();
 
     // Define available permissions
     const availablePermissions = [

@@ -109,4 +109,21 @@ roleSchema.pre('save', async function(next) {
     next();
 });
 
-module.exports={userSchema,issueSchema,documentSchema,companySchema,roleSchema}
+const chatHistorySchema = mongoose.Schema({
+    id: { type: Number, unique: true, sparse: true },
+    company_id: { type: Number, required: true },
+    user_id: { type: Number, required: true },
+    userMessage: { type: String, required: true },
+    botResponse: { type: String, required: true },
+    timestamp: { type: Date, default: Date.now }
+});
+
+// Pre-save hook for ChatHistory
+chatHistorySchema.pre('save', async function(next) {
+    if (!this.id) {
+        this.id = await getNextId('ChatHistory');
+    }
+    next();
+});
+
+module.exports={userSchema,issueSchema,documentSchema,companySchema,roleSchema,chatHistorySchema}
