@@ -15,8 +15,9 @@ cloudinary.config({
 // Create Document model
 const Document = mongoose.model('Document', documentSchema);
 
-// Python microservice URL
+// Python microservice URLs
 const PYTHON_API_URL = 'http://localhost:8000/process-document';
+const PYTHON_DELETE_URL = 'http://localhost:8000/delete-document';
 
 // Upload Document
 const uploadDocument = async (req, res) => {
@@ -199,6 +200,17 @@ const deleteDocument = async (req, res) => {
         // Delete from database
         await Document.findByIdAndDelete(documentId);
         await recordActivity(req, { action: 'DOCUMENT_DELETE', resource: document.name, result: 200, metadata: { documentId, path: `/document/${documentId}`, name: document.name } });
+
+        // Delete vectors from Pinecone via Python service (best-effort)
+        try {
+            await axios.post(PYTHON_DELETE_URL, {
+                pdfId: document._id?.toString?.() || document.id,
+                companyId: companyId,
+                namespace: undefined
+            });
+        } catch (err) {
+            console.error('Error deleting document vectors:', err?.response?.data || err.message);
+        }
 
         res.status(200).json({ message: 'Document deleted successfully' });
     } catch (error) {

@@ -27,6 +27,12 @@ class Message(BaseModel):
     companyId: Optional[int] = None
     userId: Optional[int] = None
 
+
+class DeleteRequest(BaseModel):
+    pdfId: str
+    companyId: Optional[int] = None
+    namespace: Optional[str] = None
+
 class QuizRequest(BaseModel):
     distribution: Dict[str, int]  # Format: {"Mathematics": 10, "Physics": 8, ...}
 
@@ -139,6 +145,22 @@ async def process_document_route(
     except Exception as e:
         logger.error(f"Error saving or processing document: {e}")
         raise HTTPException(status_code=500, detail=f"There was an error processing your document: {str(e)}")
+
+
+# Delete document vectors from Pinecone
+@app.post("/delete-document")
+async def delete_document_vectors(payload: DeleteRequest):
+    try:
+        logger.debug(f"Deleting vectors for pdfId={payload.pdfId}, companyId={payload.companyId}, namespace={payload.namespace}")
+        resp = worker.delete_pdf_vectors(
+            pdf_id=payload.pdfId,
+            namespace=payload.namespace,
+            company_id=payload.companyId
+        )
+        return JSONResponse(content={"deleted": True, "response": resp}, status_code=200)
+    except Exception as e:
+        logger.error(f"Error deleting document vectors: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to delete document vectors: {str(e)}")
 if __name__ == "__main__":
     #worker.process_document() #Perists directory
     import uvicorn

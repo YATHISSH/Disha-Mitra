@@ -127,6 +127,40 @@ def _ensure_pinecone_index(dim: int):
     return pc.Index(PINECONE_INDEX)
 
 
+def delete_pdf_vectors(pdf_id: str, namespace: str = None, company_id: int = None):
+    """Delete all vectors for a given pdf_id (optionally scoped by company)."""
+    print(f"[DELETE] Starting delete_pdf_vectors: pdf_id={pdf_id}, company_id={company_id}, namespace={namespace}")
+    if not PINECONE_API_KEY:
+        raise EnvironmentError("PINECONE_API_KEY not set in environment")
+    if pc is None:
+        raise EnvironmentError("Pinecone client not initialized")
+
+    idx = pc.Index(PINECONE_INDEX)
+    print(f"[DELETE] Pinecone index: {PINECONE_INDEX}")
+
+    delete_filter = {"pdf_id": str(pdf_id)}
+    if company_id is not None:
+        try:
+            delete_filter["company_id"] = int(company_id)
+        except (TypeError, ValueError):
+            delete_filter["company_id"] = company_id
+
+    delete_kwargs = {"filter": delete_filter}
+    if namespace:
+        delete_kwargs["namespace"] = namespace
+
+    print(f"[DELETE] Delete filter: {delete_filter}")
+    print(f"[DELETE] Delete kwargs: {delete_kwargs}")
+    
+    try:
+        resp = idx.delete(**delete_kwargs)
+        print(f"[DELETE] Delete response: {resp}")
+        return resp
+    except Exception as e:
+        print(f"[DELETE] Delete error: {str(e)}")
+        raise
+
+
 def load_faiss_index():
     """Load or initialize Pinecone index."""
     if not os.path.exists("./faiss_index"):
@@ -137,12 +171,16 @@ def load_faiss_index():
 def process_document(document_path, namespace: str = None, company_id: int = None,
                     user_id: int = None, pdf_id: str = None, source: str = None, category: str = None):
     """Extract text from PDF, chunk it, compute embeddings, and upsert to Pinecone."""
+    print(f"[UPLOAD] Starting process_document: pdf_id={pdf_id}, company_id={company_id}, source={source}, category={category}")
     text = _extract_text(document_path)
+    print(f"[UPLOAD] Extracted text length: {len(text)}")
     chunks = _chunk_text(text, max_chars=1200)
+    print(f"[UPLOAD] Created {len(chunks)} chunks")
     if not chunks:
         raise ValueError("No text found in the provided PDF.")
     
     embeddings = _embed_texts(chunks)
+    print(f"[UPLOAD] Generated {len(embeddings)} embeddings")
     
     idx = _ensure_pinecone_index(dim=len(embeddings[0]))
     vectors = []
@@ -173,12 +211,13 @@ def process_document(document_path, namespace: str = None, company_id: int = Non
             "metadata": metadata
         })
     
+    print(f"[UPLOAD] Sample metadata from first vector: {vectors[0]['metadata'] if vectors else 'no vectors'}")
     upsert_kwargs = {"vectors": vectors}
     if namespace:
         upsert_kwargs["namespace"] = namespace
     idx.upsert(**upsert_kwargs)
     
-    print(f"Document processed and upserted {len(vectors)} chunks to Pinecone.")
+    print(f"[UPLOAD] Document processed and upserted {len(vectors)} chunks to Pinecone.")
 
 def generate_summary(ans):
     """Generate a summary using Gemini."""
@@ -199,6 +238,8 @@ def generate_summary(ans):
 def process_prompt(prompt: str, top_k: int = 4, namespace: str = None,
                    company_id: int = None) -> str:
     """Answer a user prompt by querying Pinecone and calling Gemini."""
+    print(f"[QUERY] Starting process_prompt: company_id={company_id}, namespace={namespace}, top_k={top_k}")
+    print(f"[QUERY] User prompt: {prompt[:100]}...")
     if not PINECONE_API_KEY:
         raise EnvironmentError("PINECONE_API_KEY not set in environment")
     if genai_client is None:
@@ -210,6 +251,7 @@ def process_prompt(prompt: str, top_k: int = 4, namespace: str = None,
         contents=prompt
     )
     q_vec = qresp.embeddings[0].values
+    print(f"[QUERY] Query vector dimension: {len(q_vec)}")
 
     idx = pc.Index(PINECONE_INDEX)
     query_args = {"top_k": top_k, "include_metadata": True}
@@ -221,6 +263,7 @@ def process_prompt(prompt: str, top_k: int = 4, namespace: str = None,
         except (TypeError, ValueError):
             query_args["filter"] = {"company_id": company_id}
 
+    print(f"[QUERY] Query args: {query_args}")
     # Query Pinecone
     try:
         res = idx.query(vector=q_vec, **query_args)
@@ -232,6 +275,8 @@ def process_prompt(prompt: str, top_k: int = 4, namespace: str = None,
         matches = res.get("matches", [])
     elif hasattr(res, "matches"):
         matches = res.matches
+    
+    print(f"[QUERY] Found {len(matches)} matches from Pinecone")
 
     context_chunks = []
     for m in matches[:top_k]:
@@ -257,6 +302,7 @@ def process_prompt(prompt: str, top_k: int = 4, namespace: str = None,
     )
 
     answer = resp.text
+    print(f"[QUERY] Generated response length: {len(answer)}")
 
     chat_history.append((prompt, answer))
     return answer
