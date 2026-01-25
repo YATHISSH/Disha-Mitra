@@ -1,37 +1,67 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { getAuditLogs } from '../../api';
 
 const AuditLogs = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedFilter, setSelectedFilter] = useState('all');
     const [dateRange, setDateRange] = useState({ start: '', end: '' });
+    const [logs, setLogs] = useState([]);
+    const [summary, setSummary] = useState({ success: 0, failed: 0, total: 0 });
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
 
-    const auditLogs = [
-        { id: 1, timestamp: '2025-02-26 14:30:15', user: 's.yathissh@company.com', action: 'Document Access', resource: 'Security_Policy.pdf', result: 'Success', ip: '192.168.1.100' },
-        { id: 2, timestamp: '2025-02-26 14:25:42', user: 'rishi.kumar.s@company.com', action: 'User Login', resource: 'System', result: 'Success', ip: '192.168.1.101' },
-        { id: 3, timestamp: '2025-02-26 14:22:18', user: 'sachin.a@company.com', action: 'API Call', resource: '/api/documents', result: 'Success', ip: '192.168.1.102' },
-        { id: 4, timestamp: '2025-02-26 14:20:05', user: 'unknown_user', action: 'Login Attempt', resource: 'System', result: 'Failed', ip: '192.168.1.103' },
-        { id: 5, timestamp: '2025-02-26 14:15:30', user: 'jashvarthini.r@company.com', action: 'Document Upload', resource: 'Training_Manual.docx', result: 'Success', ip: '192.168.1.104' },
-        { id: 6, timestamp: '2025-02-26 14:10:12', user: 'admin@company.com', action: 'User Creation', resource: 'new.user@company.com', result: 'Success', ip: '192.168.1.105' },
-        { id: 7, timestamp: '2025-02-26 14:05:45', user: 'nj.meenakshi@company.com', action: 'Permission Change', resource: 'User Role', result: 'Success', ip: '192.168.1.106' },
-        { id: 8, timestamp: '2025-02-26 14:00:33', user: 'system', action: 'Backup Created', resource: 'Database', result: 'Success', ip: 'localhost' }
-    ];
+    const selectedParams = useMemo(() => {
+        if (selectedFilter === 'success') return { result: 'success', action: '' };
+        if (selectedFilter === 'failed') return { result: 'failed', action: '' };
+        if (selectedFilter === 'login') return { result: 'all', action: 'login' };
+        if (selectedFilter === 'document') return { result: 'all', action: 'document' };
+        return { result: 'all', action: '' };
+    }, [selectedFilter]);
 
-    const filteredLogs = auditLogs.filter(log => {
-        const matchesSearch = log.user.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                             log.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                             log.resource.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesFilter = selectedFilter === 'all' || 
-                             (selectedFilter === 'success' && log.result === 'Success') ||
-                             (selectedFilter === 'failed' && log.result === 'Failed') ||
-                             (selectedFilter === 'login' && log.action.toLowerCase().includes('login')) ||
-                             (selectedFilter === 'document' && log.action.toLowerCase().includes('document'));
-        return matchesSearch && matchesFilter;
-    });
+    useEffect(() => {
+        let isCancelled = false;
+        const fetchLogs = async () => {
+            setLoading(true);
+            setError('');
+            try {
+                const response = await getAuditLogs({
+                    search: searchTerm.trim(),
+                    result: selectedParams.result,
+                    action: selectedParams.action,
+                    start: dateRange.start || undefined,
+                    end: dateRange.end || undefined,
+                    page: 1,
+                    limit: 200,
+                });
+                if (!isCancelled) {
+                    setLogs(response?.data || []);
+                    setSummary(response?.summary || { success: 0, failed: 0, total: (response?.data || []).length });
+                }
+            } catch (err) {
+                console.error('Error fetching audit logs:', err);
+                if (!isCancelled) setError('Failed to load audit logs');
+            } finally {
+                if (!isCancelled) setLoading(false);
+            }
+        };
+
+        fetchLogs();
+        return () => {
+            isCancelled = true;
+        };
+    }, [searchTerm, selectedParams, dateRange.start, dateRange.end]);
 
     const exportLogs = () => {
         const csvContent = [
             ['Timestamp', 'User', 'Action', 'Resource', 'Result', 'IP Address'],
-            ...filteredLogs.map(log => [log.timestamp, log.user, log.action, log.resource, log.result, log.ip])
+            ...logs.map(log => [
+                log.timestamp,
+                log.user_email || log.user_name || log.user_id || 'unknown',
+                log.action,
+                log.resource || log.path || '',
+                log.result_text || (log.result < 400 ? 'Success' : 'Failed'),
+                log.ip_address || ''
+            ])
         ].map(row => row.join(',')).join('\n');
 
         const blob = new Blob([csvContent], { type: 'text/csv' });
@@ -72,7 +102,7 @@ const AuditLogs = () => {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm text-gray-600">Total Activities</p>
-                                <p className="text-3xl font-bold text-[#00796b]">{auditLogs.length}</p>
+                                <p className="text-3xl font-bold text-[#00796b]">{summary.total || logs.length}</p>
                                 <p className="text-sm text-gray-500 mt-1">Today</p>
                             </div>
                             <span className="material-symbols-outlined text-[#00796b] text-4xl">activity_zone</span>
@@ -83,8 +113,8 @@ const AuditLogs = () => {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm text-gray-600">Successful Actions</p>
-                                <p className="text-3xl font-bold text-green-600">{auditLogs.filter(log => log.result === 'Success').length}</p>
-                                <p className="text-sm text-green-600 mt-1">{Math.round((auditLogs.filter(log => log.result === 'Success').length / auditLogs.length) * 100)}% success rate</p>
+                                <p className="text-3xl font-bold text-green-600">{summary.success}</p>
+                                <p className="text-sm text-green-600 mt-1">{summary.total ? Math.round((summary.success / summary.total) * 100) : 0}% success rate</p>
                             </div>
                             <span className="material-symbols-outlined text-green-600 text-4xl">check_circle</span>
                         </div>
@@ -94,7 +124,7 @@ const AuditLogs = () => {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm text-gray-600">Failed Attempts</p>
-                                <p className="text-3xl font-bold text-red-600">{auditLogs.filter(log => log.result === 'Failed').length}</p>
+                                <p className="text-3xl font-bold text-red-600">{summary.failed}</p>
                                 <p className="text-sm text-red-600 mt-1">Requires attention</p>
                             </div>
                             <span className="material-symbols-outlined text-red-600 text-4xl">error</span>
@@ -105,7 +135,7 @@ const AuditLogs = () => {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm text-gray-600">Unique Users</p>
-                                <p className="text-3xl font-bold text-[#00796b]">{new Set(auditLogs.map(log => log.user)).size}</p>
+                                <p className="text-3xl font-bold text-[#00796b]">{new Set(logs.map(log => log.user_email || log.user_name || log.user_id || 'unknown')).size}</p>
                                 <p className="text-sm text-gray-500 mt-1">Active today</p>
                             </div>
                             <span className="material-symbols-outlined text-[#00796b] text-4xl">people</span>
@@ -172,47 +202,69 @@ const AuditLogs = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {filteredLogs.map((log) => (
-                                    <tr key={log.id} className="border-t hover:bg-gray-50">
-                                        <td className="p-4 text-sm font-mono">{log.timestamp}</td>
-                                        <td className="p-4">
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-8 h-8 bg-[#e0f2f1] rounded-full flex items-center justify-center text-sm">
-                                                    {log.user.charAt(0).toUpperCase()}
+                                {logs.map((log) => {
+                                    const userLabel = log.user_email || log.user_name || log.user_id || 'unknown';
+                                    const resultLabel = log.result_text || (log.result < 400 ? 'Success' : 'Failed');
+                                    const actionLabel = log.action || 'ACTION';
+                                    const timestamp = log.timestamp ? new Date(log.timestamp).toLocaleString() : '';
+                                    return (
+                                        <tr key={log._id || `${log.timestamp}-${log.resource}`} className="border-t hover:bg-gray-50">
+                                            <td className="p-4 text-sm font-mono">{timestamp}</td>
+                                            <td className="p-4">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-8 h-8 bg-[#e0f2f1] rounded-full flex items-center justify-center text-sm">
+                                                        {userLabel.charAt(0).toUpperCase()}
+                                                    </div>
+                                                    <span className="text-sm">{userLabel}</span>
                                                 </div>
-                                                <span className="text-sm">{log.user}</span>
-                                            </div>
-                                        </td>
-                                        <td className="p-4">
-                                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                                log.action.toLowerCase().includes('login') ? 'bg-blue-100 text-blue-600' :
-                                                log.action.toLowerCase().includes('document') ? 'bg-green-100 text-green-600' :
-                                                log.action.toLowerCase().includes('api') ? 'bg-purple-100 text-purple-600' :
-                                                log.action.toLowerCase().includes('user') ? 'bg-orange-100 text-orange-600' :
-                                                'bg-gray-100 text-gray-600'
-                                            }`}>
-                                                {log.action}
-                                            </span>
-                                        </td>
-                                        <td className="p-4 text-sm">
-                                            <code className="bg-gray-100 px-2 py-1 rounded text-xs">{log.resource}</code>
-                                        </td>
-                                        <td className="p-4">
-                                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                                log.result === 'Success' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
-                                            }`}>
-                                                {log.result}
-                                            </span>
-                                        </td>
-                                        <td className="p-4 text-sm font-mono text-gray-600">{log.ip}</td>
-                                    </tr>
-                                ))}
+                                            </td>
+                                            <td className="p-4">
+                                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                                    actionLabel.toLowerCase().includes('login') ? 'bg-blue-100 text-blue-600' :
+                                                    actionLabel.toLowerCase().includes('document') ? 'bg-green-100 text-green-600' :
+                                                    actionLabel.toLowerCase().includes('api') ? 'bg-purple-100 text-purple-600' :
+                                                    actionLabel.toLowerCase().includes('user') ? 'bg-orange-100 text-orange-600' :
+                                                    'bg-gray-100 text-gray-600'
+                                                }`}>
+                                                    {actionLabel}
+                                                </span>
+                                            </td>
+                                            <td className="p-4 text-sm">
+                                                <code className="bg-gray-100 px-2 py-1 rounded text-xs">{log.resource || log.path || ''}</code>
+                                            </td>
+                                            <td className="p-4">
+                                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                                    resultLabel === 'Success' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
+                                                }`}>
+                                                    {resultLabel}
+                                                </span>
+                                            </td>
+                                            <td className="p-4 text-sm font-mono text-gray-600">{log.ip_address || ''}</td>
+                                        </tr>
+                                    );
+                                })}
                             </tbody>
                         </table>
                     </div>
                 </div>
 
-                {filteredLogs.length === 0 && (
+                {loading && (
+                    <div className="bg-white rounded-lg shadow-lg p-12 text-center mt-6">
+                        <span className="material-symbols-outlined text-6xl text-[#00796b] mb-4 animate-spin">progress_activity</span>
+                        <h3 className="text-xl font-semibold text-gray-600 mb-2">Loading audit logs…</h3>
+                        <p className="text-gray-500">Fetching the latest activity records.</p>
+                    </div>
+                )}
+
+                {!loading && error && (
+                    <div className="bg-white rounded-lg shadow-lg p-12 text-center mt-6">
+                        <span className="material-symbols-outlined text-6xl text-red-300 mb-4">error</span>
+                        <h3 className="text-xl font-semibold text-gray-600 mb-2">{error}</h3>
+                        <p className="text-gray-500">Please retry or adjust your filters.</p>
+                    </div>
+                )}
+
+                {!loading && !error && logs.length === 0 && (
                     <div className="bg-white rounded-lg shadow-lg p-12 text-center mt-6">
                         <span className="material-symbols-outlined text-6xl text-gray-300 mb-4">search_off</span>
                         <h3 className="text-xl font-semibold text-gray-600 mb-2">No audit logs found</h3>

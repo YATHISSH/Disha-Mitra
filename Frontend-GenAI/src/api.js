@@ -1,7 +1,8 @@
  import axios from 'axios';
 
 const API_URL = 'http://localhost:8000/api/chat';  // Ensure this is the correct URL of your FastAPI server
-const BACKEND_URL = 'https://disha-mitra-0elc.onrender.com';
+// const BACKEND_URL = 'https://disha-mitra-0elc.onrender.com';
+const BACKEND_URL = 'http://localhost:3001';
 
 // Get JWT token from localStorage
 const getAuthHeaders = () => {
@@ -162,6 +163,19 @@ export const downloadDocument = async (documentId) => {
     }
 };
 
+// View Document API (for inline viewing)
+export const viewDocument = async (documentId) => {
+    try {
+        const response = await axios.get(`${BACKEND_URL}/document/view/${documentId}`, {
+            headers: getAuthHeaders()
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error viewing document:', error);
+        throw error;
+    }
+};
+
 // Delete Document API
 export const deleteDocument = async (documentId) => {
     try {
@@ -171,6 +185,28 @@ export const deleteDocument = async (documentId) => {
         return response.data;
     } catch (error) {
         console.error('Error deleting document:', error);
+        throw error;
+    }
+};
+
+// Audit Logs
+export const getAuditLogs = async ({ search = '', result = 'all', action = '', start = '', end = '', page = 1, limit = 50 } = {}) => {
+    try {
+        const params = new URLSearchParams();
+        if (search) params.append('search', search);
+        if (result) params.append('result', result);
+        if (action) params.append('action', action);
+        if (start) params.append('start', start);
+        if (end) params.append('end', end);
+        params.append('page', page);
+        params.append('limit', limit);
+
+        const response = await axios.get(`${BACKEND_URL}/audit/logs?${params.toString()}`, {
+            headers: getAuthHeaders()
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching audit logs:', error);
         throw error;
     }
 };

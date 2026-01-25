@@ -1,5 +1,5 @@
 import  { useState, useEffect } from 'react';
-import { uploadDocument, listDocuments, deleteDocument, downloadDocument } from '../../api';
+import { uploadDocument, listDocuments, deleteDocument, downloadDocument, viewDocument as fetchViewDocument } from '../../api';
 
 
 const DocumentLibrary = () => {
@@ -13,6 +13,8 @@ const DocumentLibrary = () => {
     const [selectedUploadCategory, setSelectedUploadCategory] = useState('policies');
     const [uploadError, setUploadError] = useState('');
     const [isLoadingDocuments, setIsLoadingDocuments] = useState(false);
+    const [viewedDocument, setViewedDocument] = useState(null);
+    const [showViewModal, setShowViewModal] = useState(false);
 
     const categories = [
         { id: 'all', name: 'All Documents', icon: 'folder' },
@@ -115,6 +117,28 @@ const DocumentLibrary = () => {
         } catch (error) {
             console.error('Download failed:', error);
         }
+    };
+
+    const handleViewDocument = async (document) => {
+        try {
+            const { viewUrl, fileType } = await fetchViewDocument(document._id || document.id);
+            setViewedDocument({ ...document, url: viewUrl, type: fileType });
+            setShowViewModal(true);
+        } catch (error) {
+            console.error('View failed:', error);
+            alert('Failed to load document preview');
+        }
+    };
+
+    const getViewerSrc = (doc) => {
+        if (!doc || !doc.url) return '';
+        const isPdf = doc.type === 'PDF' || doc.name?.toLowerCase().endsWith('.pdf');
+        if (isPdf) {
+            // Use Google Docs Viewer to ensure inline rendering for PDFs
+            const encoded = encodeURIComponent(doc.url);
+            return `https://docs.google.com/gview?url=${encoded}&embedded=true`;
+        }
+        return doc.url;
     };
 
     const filteredDocuments = documents.filter(doc => {
@@ -258,7 +282,11 @@ const DocumentLibrary = () => {
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-2">
-                                                <button className="p-2 text-gray-500 hover:text-[#00796b] hover:bg-gray-100 rounded-lg transition-colors duration-200">
+                                                <button 
+                                                    onClick={() => handleViewDocument(document)}
+                                                    className="p-2 text-gray-500 hover:text-[#00796b] hover:bg-gray-100 rounded-lg transition-colors duration-200"
+                                                    title="View document"
+                                                >
                                                     <span className="material-symbols-outlined">visibility</span>
                                                 </button>
                                                 <button
@@ -424,6 +452,76 @@ const DocumentLibrary = () => {
                                 <span className="material-symbols-outlined">upload</span>
                                 Submit
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* View Document Modal */}
+            {showViewModal && viewedDocument && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-lg shadow-2xl max-w-6xl w-full h-[90vh] flex flex-col">
+                        {/* Modal Header */}
+                        <div className="bg-[#00796b] text-white p-4 rounded-t-lg flex items-center justify-between">
+                            <h2 className="text-lg font-bold flex items-center gap-2 truncate">
+                                <span className="material-symbols-outlined">visibility</span>
+                                {viewedDocument.name}
+                            </h2>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => handleDownloadDocument(viewedDocument._id || viewedDocument.id)}
+                                    className="text-white hover:bg-[#004d40] p-2 rounded transition-colors"
+                                    title="Download"
+                                >
+                                    <span className="material-symbols-outlined">download</span>
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setShowViewModal(false);
+                                        setViewedDocument(null);
+                                    }}
+                                    className="text-white hover:bg-[#004d40] p-2 rounded transition-colors"
+                                    title="Close"
+                                >
+                                    <span className="material-symbols-outlined">close</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Modal Body - Document Viewer */}
+                        <div className="flex-1 overflow-hidden bg-gray-100">
+                            {viewedDocument.type === 'PDF' || viewedDocument.name?.toLowerCase().endsWith('.pdf') ? (
+                                <iframe
+                                    src={getViewerSrc(viewedDocument)}
+                                    className="w-full h-full border-0"
+                                    title="Document viewer"
+                                />
+                            ) : (
+                                <div className="flex flex-col items-center justify-center h-full p-8">
+                                    <span className="material-symbols-outlined text-6xl text-gray-400 mb-4">
+                                        {viewedDocument.type === 'DOCX' ? 'description' :
+                                         viewedDocument.type === 'PPTX' ? 'slideshow' : 'insert_drive_file'}
+                                    </span>
+                                    <h3 className="text-xl font-semibold text-gray-700 mb-2">Preview not available</h3>
+                                    <p className="text-gray-600 mb-4">This file type cannot be previewed in the browser.</p>
+                                    <div className="flex gap-3">
+                                        <button
+                                            onClick={() => handleDownloadDocument(viewedDocument._id || viewedDocument.id)}
+                                            className="bg-[#00796b] text-white px-6 py-2 rounded-lg hover:bg-[#004d40] transition-colors flex items-center gap-2"
+                                        >
+                                            <span className="material-symbols-outlined">download</span>
+                                            Download to View
+                                        </button>
+                                        <button
+                                            onClick={() => window.open(viewedDocument.url, '_blank')}
+                                            className="bg-gray-200 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-300 transition-colors flex items-center gap-2"
+                                        >
+                                            <span className="material-symbols-outlined">open_in_new</span>
+                                            Open in New Tab
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

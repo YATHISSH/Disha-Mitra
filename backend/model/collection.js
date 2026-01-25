@@ -1,4 +1,4 @@
-const {userSchema,issueSchema,documentSchema,companySchema,roleSchema,chatHistorySchema,teamChatSchema,apiKeySchema,apiKeyUsageSchema}=require("./schema");
+const {userSchema,issueSchema,documentSchema,companySchema,roleSchema,chatHistorySchema,teamChatSchema,apiKeySchema,apiKeyUsageSchema,activityLogSchema}=require("./schema");
 const mongoose=require("mongoose");
 
 mongoose.connect(process.env.MONGO_URI);
@@ -12,5 +12,6 @@ const ChatHistory=mongoose.model("ChatHistory",chatHistorySchema);
 const TeamChat=mongoose.model("TeamChat",teamChatSchema);
 const APIKey=mongoose.model("APIKey",apiKeySchema);
 const APIKeyUsage=mongoose.model("APIKeyUsage",apiKeyUsageSchema);
+const ActivityLog=mongoose.model("ActivityLog",activityLogSchema);
 
-module.exports={User,Company,Document,Issue,Role,ChatHistory,TeamChat,APIKey,APIKeyUsage}
+module.exports={User,Company,Document,Issue,Role,ChatHistory,TeamChat,APIKey,APIKeyUsage,ActivityLog}

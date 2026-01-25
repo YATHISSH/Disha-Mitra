@@ -45,6 +45,7 @@ issueSchema.pre('save', async function(next) {
 });
 
 const documentSchema = mongoose.Schema({
+        company_id: { type: Number, required: true },
     id: { type: Number, unique: true, sparse: true },
     name: { type: String, required: true },
     category: { type: String, required: true },
@@ -52,6 +53,7 @@ const documentSchema = mongoose.Schema({
     size: { type: String, required: true },
     url: { type: String, required: true },
     cloudinaryId: { type: String, required: true },
+    uploaded_by: { type: Number },
     uploadedBy: { type: String },
     uploadDate: { type: Date, default: Date.now },
     status: { type: String, default: 'active', enum: ['active', 'archived'] }
@@ -193,3 +195,29 @@ apiKeyUsageSchema.pre('save', async function(next) {
 });
 
 module.exports={userSchema,issueSchema,documentSchema,companySchema,roleSchema,chatHistorySchema,teamChatSchema,apiKeySchema,apiKeyUsageSchema}
+
+// New: Activity log schema for general app actions
+const activityLogSchema = mongoose.Schema({
+    id: { type: Number, unique: true, sparse: true },
+    company_id: { type: Number },
+    user_id: { type: Number },
+    action: { type: String }, // e.g., LOGIN, CREATE, DELETE
+    resource: { type: String }, // e.g., /document/upload
+    result: { type: Number }, // HTTP status code
+    ip_address: { type: String },
+    user_agent: { type: String },
+    method: { type: String },
+    path: { type: String },
+    duration_ms: { type: Number },
+    metadata: { type: Object },
+    timestamp: { type: Date, default: Date.now }
+});
+
+activityLogSchema.pre('save', async function(next) {
+    if (!this.id) {
+        this.id = await getNextId('ActivityLog');
+    }
+    next();
+});
+
+module.exports.activityLogSchema = activityLogSchema;

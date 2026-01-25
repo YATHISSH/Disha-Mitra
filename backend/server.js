@@ -9,12 +9,15 @@ const roleRoutes=require("./routes/roleRoutes");
 const teamChatRoutes=require("./routes/teamChatRoutes");
 const externalApiRoutes=require("./routes/externalApiRoutes");
 const apiKeyRoutes=require("./routes/apiKeyRoutes");
+const auditLogRoutes=require("./routes/auditLogRoutes");
 const cors=require("cors");
 const jwt=require("jsonwebtoken");
 const { TeamChat } = require("./model/collection");
 const PORT=3001;
 
 const app=express();
+// Trust proxy to capture real client IPs from x-forwarded-for when behind reverse proxies
+app.set('trust proxy', true);
 const server=http.createServer(app);
 const serverStartTime = Date.now();
 const io=socketIo(server, {
@@ -28,6 +31,8 @@ const io=socketIo(server, {
 app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended:true}));
+
+// Activity logger (log all HTTP requests except excluded ones)
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -45,6 +50,7 @@ app.use("/role",roleRoutes);
 app.use("/team-chat",teamChatRoutes);
 app.use("/api/v1", externalApiRoutes);
 app.use("/api-keys",apiKeyRoutes);
+app.use("/audit/logs",auditLogRoutes);
 
 // Socket.io authentication middleware
 io.use((socket, next) => {

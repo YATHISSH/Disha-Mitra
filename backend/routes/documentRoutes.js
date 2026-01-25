@@ -38,5 +38,6 @@ router.post('/upload', verifyToken, upload.single('file'), documentController.up
 router.get('/list', verifyToken, documentController.listDocuments);
 router.delete('/:documentId', verifyToken, documentController.deleteDocument);
 router.get('/download/:documentId', verifyToken, documentController.downloadDocument);
+router.get('/view/:documentId', verifyToken, documentController.viewDocument);
 
 module.exports = router;

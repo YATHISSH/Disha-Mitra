@@ -1,6 +1,7 @@
 const mongoose=require("mongoose");
 const jwt = require('jsonwebtoken');
 const {User,Company}=require("../model/collection");
+const { recordActivity } = require('../utils/auditLogger');
 
 mongoose.connect(process.env.MONGO_URI);
 
@@ -22,14 +23,17 @@ const loginUser =async(req,res)=>{
         const {email,password}=req.body;
         const user=await User.findOne({email});
         if (!user){
+            await recordActivity(req, { action: 'LOGIN', resource: '/auth/login', result: 400, metadata: { email } });
             return res.status(400).json({"error":2, "message": "User not found"});
         }
         const isMatch=(user.password==password);
         if (!isMatch){
+            await recordActivity(req, { action: 'LOGIN', resource: '/auth/login', result: 406, metadata: { email }, companyId: user.company_id, userId: user.id });
             return res.status(406).json({"error":1, "message": "Incorrect password"});
         }
         
         const token = generateToken(user);
+        await recordActivity(req, { action: 'LOGIN', resource: '/auth/login', result: 200, metadata: { email }, companyId: user.company_id, userId: user.id });
         
         return res.status(200).json({
             "error":0,
@@ -46,6 +50,7 @@ const loginUser =async(req,res)=>{
     }
     catch(err){
         console.log("Error at logging in:",err);
+        await recordActivity(req, { action: 'LOGIN', resource: '/auth/login', result: 500, metadata: { email: req.body?.email } });
         return res.status(400).json({"error":3, "message": "Server error"});
     }
 }
@@ -64,10 +69,12 @@ const registerUser = async (req, res) => {
         email:email,
     });
         await newUser.save();
+        await recordActivity(req, { action: 'USER_REGISTER', resource: '/auth/signup', result: 200, metadata: { email } });
         return res.status(200).json({"error":0});
     }
     catch(error){
         console.log("Error at signing up",error);
+        await recordActivity(req, { action: 'USER_REGISTER', resource: '/auth/signup', result: 400, metadata: { email: req.body?.email } });
         return res.status(400).json({"error occured":2});
     }
 };
@@ -132,6 +139,8 @@ const registerCompany = async (req, res) => {
         await newUser.save();
         console.log("Admin user created successfully:", newUser);
 
+        await recordActivity(req, { action: 'COMPANY_REGISTER', resource: '/auth/company-signup', result: 201, metadata: { companyName, adminEmail } });
+
         return res.status(201).json({
             success: true,
             message: "Company registered successfully",
@@ -140,6 +149,7 @@ const registerCompany = async (req, res) => {
         });
     } catch (error) {
         console.error("Error during company registration:", error);
+        await recordActivity(req, { action: 'COMPANY_REGISTER', resource: '/auth/company-signup', result: 400, metadata: { adminEmail: req.body?.adminEmail } });
         return res.status(400).json({
             success: false,
             message: "Error during company registration",
@@ -180,6 +190,7 @@ const createUser = async (req, res) => {
 
         await newUser.save();
         console.log("User created successfully:", newUser);
+        await recordActivity(req, { action: 'USER_CREATE', resource: '/auth/create-user', result: 201, metadata: { email } });
 
         return res.status(201).json({
             success: true,
@@ -195,6 +206,7 @@ const createUser = async (req, res) => {
         });
     } catch (error) {
         console.error("Error creating user:", error);
+        await recordActivity(req, { action: 'USER_CREATE', resource: '/auth/create-user', result: 400, metadata: { email: req.body?.email } });
         return res.status(400).json({
             success: false,
             message: "Error creating user",

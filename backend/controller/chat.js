@@ -1,5 +1,6 @@
 const axios = require('axios');
 const { ChatHistory } = require('../model/collection');
+const { recordActivity } = require('../utils/auditLogger');
 
 const PYTHON_API_URL = process.env.PYTHON_API_URL || 'http://localhost:8000/api/chat';
 
@@ -11,11 +12,13 @@ const sendChatMessage = async (req, res) => {
         const companyId = (req.user?.company_id) || req.company_id;
 
         if (!rawMessage || !rawMessage.trim()) {
+            await recordActivity(req, { action: 'CHAT_SEND', resource: '/issue/chat', result: 400, metadata: { reason: 'missing_message' } });
             return res.status(400).json({ error: 'User message is required' });
         }
         const userMessage = rawMessage.trim();
 
         if (!companyId) {
+            await recordActivity(req, { action: 'CHAT_SEND', resource: '/issue/chat', result: 401, metadata: { reason: 'missing_company' } });
             return res.status(401).json({ error: 'Company ID is required' });
         }
 
@@ -39,6 +42,8 @@ const sendChatMessage = async (req, res) => {
         await chatEntry.save();
 
         // Send response back to frontend
+        await recordActivity(req, { action: 'CHAT_SEND', resource: '/issue/chat', result: 200, metadata: { chatId: chatEntry.id } });
+
         res.status(200).json({
             message: 'Chat processed successfully',
             botResponse: botResponse,
@@ -47,6 +52,8 @@ const sendChatMessage = async (req, res) => {
 
     } catch (error) {
         console.error('Error processing chat:', error);
+
+        await recordActivity(req, { action: 'CHAT_SEND', resource: '/issue/chat', result: 500, metadata: { error: error.message } });
 
         if (error.response?.status === 500) {
             return res.status(500).json({ error: 'Python API server error' });

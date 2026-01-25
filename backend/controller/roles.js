@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const { Role } = require("../model/collection");
+const { recordActivity } = require('../utils/auditLogger');
 
 mongoose.connect(process.env.MONGO_URI);
 
@@ -26,6 +27,7 @@ const createRole = async (req, res) => {
 
         await newRole.save();
         console.log("Role created successfully:", newRole);
+        await recordActivity(req, { action: 'ROLE_CREATE', resource: '/role/create', result: 201, metadata: { name } });
 
         return res.status(201).json({
             success: true,
@@ -41,6 +43,7 @@ const createRole = async (req, res) => {
         });
     } catch (error) {
         console.error("Error creating role:", error);
+        await recordActivity(req, { action: 'ROLE_CREATE', resource: '/role/create', result: 400, metadata: { error: error.message } });
         return res.status(400).json({
             success: false,
             message: "Error creating role",

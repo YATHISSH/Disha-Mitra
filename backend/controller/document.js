@@ -2,6 +2,7 @@ const cloudinary = require('cloudinary').v2;
 const mongoose = require('mongoose');
 const axios = require('axios');
 const { documentSchema } = require('../model/schema');
+const { recordActivity } = require('../utils/auditLogger');
 require('dotenv').config();
 
 // Configure Cloudinary
@@ -25,14 +26,17 @@ const uploadDocument = async (req, res) => {
         const companyId = (req.user?.company_id) || req.company_id;
         
         if (!req.file) {
+            await recordActivity(req, { action: 'DOCUMENT_UPLOAD', resource: '/document/upload', result: 400, metadata: { reason: 'no_file' } });
             return res.status(400).json({ error: 'No file provided' });
         }
 
         if (!category) {
+            await recordActivity(req, { action: 'DOCUMENT_UPLOAD', resource: '/document/upload', result: 400, metadata: { reason: 'missing_category' } });
             return res.status(400).json({ error: 'Category is required' });
         }
 
         if (!companyId) {
+            await recordActivity(req, { action: 'DOCUMENT_UPLOAD', resource: '/document/upload', result: 401, metadata: { reason: 'missing_company' } });
             return res.status(401).json({ error: 'Company ID not provided' });
         }
 
@@ -41,9 +45,8 @@ const uploadDocument = async (req, res) => {
             {
                 resource_type: 'raw',
                 folder: 'documents',
-                public_id: `${Date.now()}_${req.file.originalname.split('.')[0]}`,
+                public_id: `doc_${Date.now()}`,
                 type: 'upload',
-                flags: 'attachment',
             },
             async (error, result) => {
                 if (error) {
@@ -54,13 +57,14 @@ const uploadDocument = async (req, res) => {
                 try {
                     // Create document record in database
                     const document = new Document({
+                        company_id: companyId,
                         name: req.file.originalname,
                         category: category,
                         type: req.file.originalname.split('.').pop().toUpperCase(),
                         size: `${(req.file.size / (1024 * 1024)).toFixed(1)} MB`,
                         url: result.secure_url,
                         cloudinaryId: result.public_id,
-                        uploadedBy: req.body.uploadedBy || 'Admin',
+                        uploaded_by: userId || undefined,
                         status: 'active',
                     });
 
@@ -78,12 +82,20 @@ const uploadDocument = async (req, res) => {
                         console.error('Error processing document for Pinecone:', err);
                     });
                     
+                    await recordActivity(req, {
+                        action: 'DOCUMENT_UPLOAD',
+                        resource: savedDocument.name,
+                        result: 201,
+                        metadata: { documentId: savedDocument.id, path: '/document/upload', name: savedDocument.name, category }
+                    });
+
                     res.status(201).json({
                         message: 'Document uploaded successfully',
                         document: savedDocument,
                     });
                 } catch (dbError) {
                     console.error('Database error:', dbError);
+                    await recordActivity(req, { action: 'DOCUMENT_UPLOAD', resource: '/document/upload', result: 500, metadata: { error: dbError.message } });
                     res.status(500).json({ error: 'Failed to save document to database' });
                 }
             }
@@ -93,6 +105,7 @@ const uploadDocument = async (req, res) => {
         uploadStream.end(req.file.buffer);
     } catch (error) {
         console.error('Error uploading document:', error);
+        await recordActivity(req, { action: 'DOCUMENT_UPLOAD', resource: '/document/upload', result: 500, metadata: { error: error.message } });
         res.status(500).json({ error: 'Internal server error' });
     }
 };
@@ -131,7 +144,13 @@ const processDocumentForPinecone = async (documentUrl, companyId, userId, pdfId,
 const listDocuments = async (req, res) => {
     try {
         const { category, search } = req.query;
-        let query = { status: 'active' };
+        const companyId = req.user.company_id;
+
+        if (!companyId) {
+            return res.status(401).json({ error: 'Company ID not found in token' });
+        }
+
+        let query = { status: 'active', company_id: companyId };
 
         if (category && category !== 'all') {
             query.category = category;
@@ -158,45 +177,112 @@ const listDocuments = async (req, res) => {
 const deleteDocument = async (req, res) => {
     try {
         const { documentId } = req.params;
+        const companyId = req.user.company_id;
 
         const document = await Document.findById(documentId);
         if (!document) {
+            await recordActivity(req, { action: 'DOCUMENT_DELETE', resource: `/document/${documentId}`, result: 404 });
             return res.status(404).json({ error: 'Document not found' });
+        }
+
+        // Verify document belongs to user's company
+        if (document.company_id !== companyId) {
+            await recordActivity(req, { action: 'DOCUMENT_DELETE', resource: `/document/${documentId}`, result: 403 });
+            return res.status(403).json({ error: 'Access denied' });
         }
 
         // Delete from Cloudinary
         if (document.cloudinaryId) {
-            await cloudinary.uploader.destroy(document.cloudinaryId);
+            await cloudinary.uploader.destroy(document.cloudinaryId, { resource_type: 'raw' });
         }
 
         // Delete from database
         await Document.findByIdAndDelete(documentId);
+        await recordActivity(req, { action: 'DOCUMENT_DELETE', resource: document.name, result: 200, metadata: { documentId, path: `/document/${documentId}`, name: document.name } });
 
         res.status(200).json({ message: 'Document deleted successfully' });
     } catch (error) {
         console.error('Error deleting document:', error);
+        await recordActivity(req, { action: 'DOCUMENT_DELETE', resource: `/document/${req.params?.documentId}`, result: 500, metadata: { error: error.message } });
         res.status(500).json({ error: 'Failed to delete document' });
     }
 };
 
-// Download Document (returns URL)
+// Download Document (returns URL with attachment flag)
 const downloadDocument = async (req, res) => {
     try {
         const { documentId } = req.params;
+        const companyId = req.user.company_id;
 
         const document = await Document.findById(documentId);
         if (!document) {
+            await recordActivity(req, { action: 'DOCUMENT_DOWNLOAD', resource: `/document/download/${documentId}`, result: 404 });
             return res.status(404).json({ error: 'Document not found' });
         }
 
+        // Verify document belongs to user's company
+        if (document.company_id !== companyId) {
+            await recordActivity(req, { action: 'DOCUMENT_DOWNLOAD', resource: `/document/download/${documentId}`, result: 403 });
+            return res.status(403).json({ error: 'Access denied' });
+        }
+
+        // Generate download URL with attachment flag
+        const downloadUrl = cloudinary.url(document.cloudinaryId, {
+            resource_type: 'raw',
+            flags: 'attachment',
+            secure: true
+        });
+
+        await recordActivity(req, { action: 'DOCUMENT_DOWNLOAD', resource: document.name, result: 200, metadata: { documentId, path: `/document/download/${documentId}`, name: document.name } });
+
         res.status(200).json({
             message: 'Download URL retrieved',
-            downloadUrl: document.url,
+            downloadUrl: downloadUrl,
             fileName: document.name,
         });
     } catch (error) {
         console.error('Error getting download URL:', error);
+        await recordActivity(req, { action: 'DOCUMENT_DOWNLOAD', resource: `/document/download/${req.params?.documentId}`, result: 500, metadata: { error: error.message } });
         res.status(500).json({ error: 'Failed to get download URL' });
+    }
+};
+
+// View Document (returns URL for inline viewing)
+const viewDocument = async (req, res) => {
+    try {
+        const { documentId } = req.params;
+        const companyId = req.user.company_id;
+
+        const document = await Document.findById(documentId);
+        if (!document) {
+            await recordActivity(req, { action: 'DOCUMENT_VIEW', resource: `/document/view/${documentId}`, result: 404 });
+            return res.status(404).json({ error: 'Document not found' });
+        }
+
+        // Verify document belongs to user's company
+        if (document.company_id !== companyId) {
+            await recordActivity(req, { action: 'DOCUMENT_VIEW', resource: `/document/view/${documentId}`, result: 403 });
+            return res.status(403).json({ error: 'Access denied' });
+        }
+
+        // Generate inline viewing URL without attachment flag
+        const viewUrl = cloudinary.url(document.cloudinaryId, {
+            resource_type: 'raw',
+            secure: true
+        });
+
+        await recordActivity(req, { action: 'DOCUMENT_VIEW', resource: document.name, result: 200, metadata: { documentId, path: `/document/view/${documentId}`, name: document.name } });
+
+        res.status(200).json({
+            message: 'View URL retrieved',
+            viewUrl: viewUrl,
+            fileName: document.name,
+            fileType: document.type,
+        });
+    } catch (error) {
+        console.error('Error getting view URL:', error);
+        await recordActivity(req, { action: 'DOCUMENT_VIEW', resource: `/document/view/${req.params?.documentId}`, result: 500, metadata: { error: error.message } });
+        res.status(500).json({ error: 'Failed to get view URL' });
     }
 };
 
@@ -205,4 +291,5 @@ module.exports = {
     listDocuments,
     deleteDocument,
     downloadDocument,
+    viewDocument,
 };

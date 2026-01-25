@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const { APIKey, APIKeyUsage } = require('../model/collection');
+const { recordActivity } = require('../utils/auditLogger');
 
 // Generate new API key
 const generateAPIKey = async (req, res) => {
@@ -9,6 +10,7 @@ const generateAPIKey = async (req, res) => {
         const userId = req.user.id;
 
         if (!name) {
+            await recordActivity(req, { action: 'APIKEY_CREATE', resource: '/api-keys/generate', result: 400, metadata: { reason: 'missing_name' } });
             return res.status(400).json({ 
                 success: false, 
                 message: 'API key name is required' 
@@ -37,6 +39,8 @@ const generateAPIKey = async (req, res) => {
 
         await apiKey.save();
 
+        await recordActivity(req, { action: 'APIKEY_CREATE', resource: apiKey.name, result: 201, metadata: { id: apiKey.id, path: '/api-keys/generate', name: apiKey.name } });
+
         res.status(201).json({
             success: true,
             message: 'API key generated successfully',
@@ -51,6 +55,7 @@ const generateAPIKey = async (req, res) => {
         });
     } catch (error) {
         console.error('Error generating API key:', error);
+        await recordActivity(req, { action: 'APIKEY_CREATE', resource: '/api-keys/generate', result: 500, metadata: { error: error.message } });
         res.status(500).json({ 
             success: false, 
             message: 'Failed to generate API key',
@@ -103,6 +108,7 @@ const revokeAPIKey = async (req, res) => {
         const apiKey = await APIKey.findOne({ id: parseInt(id), company_id: companyId });
 
         if (!apiKey) {
+            await recordActivity(req, { action: 'APIKEY_REVOKE', resource: `/api-keys/${id}/revoke`, result: 404 });
             return res.status(404).json({ 
                 success: false, 
                 message: 'API key not found' 
@@ -111,6 +117,7 @@ const revokeAPIKey = async (req, res) => {
 
         apiKey.is_active = false;
         await apiKey.save();
+        await recordActivity(req, { action: 'APIKEY_REVOKE', resource: apiKey.name, result: 200, metadata: { id: apiKey.id, path: `/api-keys/${id}/revoke` } });
 
         res.status(200).json({
             success: true,
@@ -118,6 +125,7 @@ const revokeAPIKey = async (req, res) => {
         });
     } catch (error) {
         console.error('Error revoking API key:', error);
+        await recordActivity(req, { action: 'APIKEY_REVOKE', resource: `/api-keys/${req.params?.id}/revoke`, result: 500, metadata: { error: error.message } });
         res.status(500).json({ 
             success: false, 
             message: 'Failed to revoke API key',
@@ -135,6 +143,7 @@ const regenerateAPIKey = async (req, res) => {
         const oldKey = await APIKey.findOne({ id: parseInt(id), company_id: companyId });
 
         if (!oldKey) {
+            await recordActivity(req, { action: 'APIKEY_REGENERATE', resource: `/api-keys/${id}/regenerate`, result: 404 });
             return res.status(404).json({ 
                 success: false, 
                 message: 'API key not found' 
@@ -159,6 +168,7 @@ const regenerateAPIKey = async (req, res) => {
         });
 
         await newApiKey.save();
+        await recordActivity(req, { action: 'APIKEY_REGENERATE', resource: newApiKey.name, result: 201, metadata: { newId: newApiKey.id, oldId: oldKey.id, path: `/api-keys/${id}/regenerate` } });
 
         res.status(201).json({
             success: true,
@@ -174,6 +184,7 @@ const regenerateAPIKey = async (req, res) => {
         });
     } catch (error) {
         console.error('Error regenerating API key:', error);
+        await recordActivity(req, { action: 'APIKEY_REGENERATE', resource: `/api-keys/${req.params?.id}/regenerate`, result: 500, metadata: { error: error.message } });
         res.status(500).json({ 
             success: false, 
             message: 'Failed to regenerate API key',

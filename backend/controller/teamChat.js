@@ -1,4 +1,5 @@
 const { TeamChat } = require('../model/collection');
+const { recordActivity } = require('../utils/auditLogger');
 
 // Get team chat messages for a company (category: team)
 const getTeamChatHistory = async (req, res) => {
