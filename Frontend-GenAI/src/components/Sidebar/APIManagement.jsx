@@ -138,20 +138,22 @@ const APIManagement = () => {
                                 <p className="text-gray-600">Manage API keys, endpoints, and monitor usage</p>
                             </div>
                         </div>
-                        <button 
-                            onClick={() => setShowCreateModal(true)}
-                            className="bg-[#00796b] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#004d40] transition-colors duration-200 flex items-center gap-2"
-                        >
-                            <span className="material-symbols-outlined">add</span>
-                            Create API Key
-                        </button>
-                        <button 
-                            onClick={() => navigate('/docs/api')}
-                            className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors duration-200 flex items-center gap-2"
-                        >
-                            <span className="material-symbols-outlined">description</span>
-                            View Docs
-                        </button>
+                        <div className="flex items-center gap-3">
+                            <button 
+                                onClick={() => setShowCreateModal(true)}
+                                className="bg-[#00796b] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#004d40] transition-colors duration-200 flex items-center gap-2"
+                            >
+                                <span className="material-symbols-outlined">add</span>
+                                Create API Key
+                            </button>
+                            <button 
+                                onClick={() => navigate('/docs/api')}
+                                className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors duration-200 flex items-center gap-2"
+                            >
+                                <span className="material-symbols-outlined">description</span>
+                                View Docs
+                            </button>
+                        </div>
                     </div>
                 </div>
 

@@ -9,6 +9,9 @@ const AuditLogs = () => {
     const [summary, setSummary] = useState({ success: 0, failed: 0, total: 0 });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(50);
+    const [totalPages, setTotalPages] = useState(0);
 
     const selectedParams = useMemo(() => {
         if (selectedFilter === 'success') return { result: 'success', action: '' };
@@ -18,6 +21,7 @@ const AuditLogs = () => {
         return { result: 'all', action: '' };
     }, [selectedFilter]);
 
+    // Fetch logs with pagination
     useEffect(() => {
         let isCancelled = false;
         const fetchLogs = async () => {
@@ -30,12 +34,16 @@ const AuditLogs = () => {
                     action: selectedParams.action,
                     start: dateRange.start || undefined,
                     end: dateRange.end || undefined,
-                    page: 1,
-                    limit: 200,
+                    page: currentPage,
+                    limit: pageSize,
                 });
                 if (!isCancelled) {
                     setLogs(response?.data || []);
-                    setSummary(response?.summary || { success: 0, failed: 0, total: (response?.data || []).length });
+                    setSummary(response?.summary || { success: 0, failed: 0, total: 0 });
+                    const { pagination } = response || {};
+                    if (pagination) {
+                        setTotalPages(Math.ceil(pagination.total / pagination.limit));
+                    }
                 }
             } catch (err) {
                 console.error('Error fetching audit logs:', err);
@@ -49,7 +57,34 @@ const AuditLogs = () => {
         return () => {
             isCancelled = true;
         };
+    }, [searchTerm, selectedParams, dateRange.start, dateRange.end, currentPage, pageSize]);
+
+    // Reset to page 1 when filters change
+    useEffect(() => {
+        setCurrentPage(1);
     }, [searchTerm, selectedParams, dateRange.start, dateRange.end]);
+
+    const handlePageSizeChange = (newSize) => {
+        setPageSize(newSize);
+        setCurrentPage(1);
+    };
+
+    const handlePreviousPage = () => {
+        if (currentPage > 1) {
+            setCurrentPage(currentPage - 1);
+        }
+    };
+
+    const handleNextPage = () => {
+        if (currentPage < totalPages) {
+            setCurrentPage(currentPage + 1);
+        }
+    };
+
+    const handlePageInput = (pageNum) => {
+        const num = Math.max(1, Math.min(pageNum, totalPages));
+        setCurrentPage(num);
+    };
 
     const exportLogs = () => {
         const csvContent = [
@@ -72,6 +107,9 @@ const AuditLogs = () => {
         a.click();
         window.URL.revokeObjectURL(url);
     };
+
+    const startIndex = (currentPage - 1) * pageSize + 1;
+    const endIndex = Math.min(currentPage * pageSize, summary.total);
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-[#f5f7fa] to-[#c3cfe2] p-6">
@@ -102,8 +140,8 @@ const AuditLogs = () => {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm text-gray-600">Total Activities</p>
-                                <p className="text-3xl font-bold text-[#00796b]">{summary.total || logs.length}</p>
-                                <p className="text-sm text-gray-500 mt-1">Today</p>
+                                <p className="text-3xl font-bold text-[#00796b]">{summary.total}</p>
+                                <p className="text-sm text-gray-500 mt-1">All time</p>
                             </div>
                             <span className="material-symbols-outlined text-[#00796b] text-4xl">activity_zone</span>
                         </div>
@@ -136,7 +174,7 @@ const AuditLogs = () => {
                             <div>
                                 <p className="text-sm text-gray-600">Unique Users</p>
                                 <p className="text-3xl font-bold text-[#00796b]">{new Set(logs.map(log => log.user_email || log.user_name || log.user_id || 'unknown')).size}</p>
-                                <p className="text-sm text-gray-500 mt-1">Active today</p>
+                                <p className="text-sm text-gray-500 mt-1">On this page</p>
                             </div>
                             <span className="material-symbols-outlined text-[#00796b] text-4xl">people</span>
                         </div>
@@ -145,108 +183,178 @@ const AuditLogs = () => {
 
                 {/* Filters */}
                 <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                         <div className="relative">
                             <span className="material-symbols-outlined absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
                                 search
                             </span>
                             <input
                                 type="text"
-                                placeholder="Search logs..."
+                                placeholder="Search by action, resource, or IP..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00796b] focus:border-transparent"
+                                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00796b]"
                             />
                         </div>
-                        
-                        <select 
-                            value={selectedFilter}
-                            onChange={(e) => setSelectedFilter(e.target.value)}
-                            className="border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#00796b]"
+
+                        <div>
+                            <select
+                                value={selectedFilter}
+                                onChange={(e) => setSelectedFilter(e.target.value)}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00796b]"
+                            >
+                                <option value="all">All Activities</option>
+                                <option value="success">Successful Actions</option>
+                                <option value="failed">Failed Actions</option>
+                                <option value="login">Login Activities</option>
+                                <option value="document">Document Operations</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <input
+                                type="date"
+                                value={dateRange.start}
+                                onChange={(e) => setDateRange({...dateRange, start: e.target.value})}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00796b]"
+                                placeholder="Start Date"
+                            />
+                        </div>
+
+                        <div>
+                            <input
+                                type="date"
+                                value={dateRange.end}
+                                onChange={(e) => setDateRange({...dateRange, end: e.target.value})}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00796b]"
+                                placeholder="End Date"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Page Size Selector */}
+                    <div className="flex items-center gap-4">
+                        <label className="text-sm font-medium text-gray-700">Rows per page:</label>
+                        <select
+                            value={pageSize}
+                            onChange={(e) => handlePageSizeChange(parseInt(e.target.value))}
+                            className="px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00796b]"
                         >
-                            <option value="all">All Activities</option>
-                            <option value="success">Successful Only</option>
-                            <option value="failed">Failed Only</option>
-                            <option value="login">Login Activities</option>
-                            <option value="document">Document Activities</option>
+                            <option value={10}>10</option>
+                            <option value={25}>25</option>
+                            <option value={50}>50</option>
+                            <option value={100}>100</option>
+                            <option value={200}>200</option>
                         </select>
-
-                        <input
-                            type="date"
-                            value={dateRange.start}
-                            onChange={(e) => setDateRange({...dateRange, start: e.target.value})}
-                            className="border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#00796b]"
-                        />
-
-                        <input
-                            type="date"
-                            value={dateRange.end}
-                            onChange={(e) => setDateRange({...dateRange, end: e.target.value})}
-                            className="border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#00796b]"
-                        />
                     </div>
                 </div>
 
-                {/* Audit Logs Table */}
-                <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-                    <div className="overflow-x-auto">
-                        <table className="w-full">
-                            <thead className="bg-gray-50">
-                                <tr>
-                                    <th className="text-left p-4 font-semibold text-[#004d40]">Timestamp</th>
-                                    <th className="text-left p-4 font-semibold text-[#004d40]">User</th>
-                                    <th className="text-left p-4 font-semibold text-[#004d40]">Action</th>
-                                    <th className="text-left p-4 font-semibold text-[#004d40]">Resource</th>
-                                    <th className="text-left p-4 font-semibold text-[#004d40]">Result</th>
-                                    <th className="text-left p-4 font-semibold text-[#004d40]">IP Address</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {logs.map((log) => {
-                                    const userLabel = log.user_email || log.user_name || log.user_id || 'unknown';
-                                    const resultLabel = log.result_text || (log.result < 400 ? 'Success' : 'Failed');
-                                    const actionLabel = log.action || 'ACTION';
-                                    const timestamp = log.timestamp ? new Date(log.timestamp).toLocaleString() : '';
-                                    return (
-                                        <tr key={log._id || `${log.timestamp}-${log.resource}`} className="border-t hover:bg-gray-50">
-                                            <td className="p-4 text-sm font-mono">{timestamp}</td>
-                                            <td className="p-4">
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-8 h-8 bg-[#e0f2f1] rounded-full flex items-center justify-center text-sm">
-                                                        {userLabel.charAt(0).toUpperCase()}
+                {/* Table */}
+                <div className="bg-white rounded-lg shadow-lg overflow-hidden mb-6">
+                    {!loading && logs.length > 0 && (
+                        <div className="overflow-x-auto">
+                            <table className="w-full">
+                                <thead className="bg-[#e0f2f1] border-b-2 border-[#00796b]">
+                                    <tr>
+                                        <th className="text-left p-4 font-semibold text-[#004d40]">Timestamp</th>
+                                        <th className="text-left p-4 font-semibold text-[#004d40]">User</th>
+                                        <th className="text-left p-4 font-semibold text-[#004d40]">Action</th>
+                                        <th className="text-left p-4 font-semibold text-[#004d40]">Resource</th>
+                                        <th className="text-left p-4 font-semibold text-[#004d40]">Result</th>
+                                        <th className="text-left p-4 font-semibold text-[#004d40]">IP Address</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {logs.map((log) => {
+                                        const userLabel = log.user_email || log.user_name || log.user_id || 'unknown';
+                                        const resultLabel = log.result_text || (log.result < 400 ? 'Success' : 'Failed');
+                                        const actionLabel = log.action || 'ACTION';
+                                        const timestamp = log.timestamp ? new Date(log.timestamp).toLocaleString() : '';
+                                        return (
+                                            <tr key={log._id || `${log.timestamp}-${log.resource}`} className="border-t hover:bg-gray-50">
+                                                <td className="p-4 text-sm font-mono">{timestamp}</td>
+                                                <td className="p-4">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="w-8 h-8 bg-[#e0f2f1] rounded-full flex items-center justify-center text-sm">
+                                                            {userLabel.charAt(0).toUpperCase()}
+                                                        </div>
+                                                        <span className="text-sm">{userLabel}</span>
                                                     </div>
-                                                    <span className="text-sm">{userLabel}</span>
-                                                </div>
-                                            </td>
-                                            <td className="p-4">
-                                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                                    actionLabel.toLowerCase().includes('login') ? 'bg-blue-100 text-blue-600' :
-                                                    actionLabel.toLowerCase().includes('document') ? 'bg-green-100 text-green-600' :
-                                                    actionLabel.toLowerCase().includes('api') ? 'bg-purple-100 text-purple-600' :
-                                                    actionLabel.toLowerCase().includes('user') ? 'bg-orange-100 text-orange-600' :
-                                                    'bg-gray-100 text-gray-600'
-                                                }`}>
-                                                    {actionLabel}
-                                                </span>
-                                            </td>
-                                            <td className="p-4 text-sm">
-                                                <code className="bg-gray-100 px-2 py-1 rounded text-xs">{log.resource || log.path || ''}</code>
-                                            </td>
-                                            <td className="p-4">
-                                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                                    resultLabel === 'Success' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
-                                                }`}>
-                                                    {resultLabel}
-                                                </span>
-                                            </td>
-                                            <td className="p-4 text-sm font-mono text-gray-600">{log.ip_address || ''}</td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
-                    </div>
+                                                </td>
+                                                <td className="p-4">
+                                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                                        actionLabel.toLowerCase().includes('login') ? 'bg-blue-100 text-blue-600' :
+                                                        actionLabel.toLowerCase().includes('document') ? 'bg-green-100 text-green-600' :
+                                                        actionLabel.toLowerCase().includes('api') ? 'bg-purple-100 text-purple-600' :
+                                                        actionLabel.toLowerCase().includes('user') ? 'bg-orange-100 text-orange-600' :
+                                                        'bg-gray-100 text-gray-600'
+                                                    }`}>
+                                                        {actionLabel}
+                                                    </span>
+                                                </td>
+                                                <td className="p-4 text-sm">
+                                                    <code className="bg-gray-100 px-2 py-1 rounded text-xs">{log.resource || log.path || ''}</code>
+                                                </td>
+                                                <td className="p-4">
+                                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                                        resultLabel === 'Success' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
+                                                    }`}>
+                                                        {resultLabel}
+                                                    </span>
+                                                </td>
+                                                <td className="p-4 text-sm font-mono text-gray-600">{log.ip_address || ''}</td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
                 </div>
+
+                {/* Pagination Controls */}
+                {!loading && logs.length > 0 && (
+                    <div className="bg-white rounded-lg shadow-lg p-4 mb-6">
+                        <div className="flex items-center justify-between flex-wrap gap-4">
+                            <div className="text-sm text-gray-600">
+                                Showing <span className="font-semibold">{startIndex}</span> to <span className="font-semibold">{endIndex}</span> of <span className="font-semibold">{summary.total}</span> results
+                            </div>
+
+                            <div className="flex items-center gap-4">
+                                <button
+                                    onClick={handlePreviousPage}
+                                    disabled={currentPage === 1 || loading}
+                                    className="p-2 rounded-lg border border-gray-300 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                    title="Previous page"
+                                >
+                                    <span className="material-symbols-outlined">chevron_left</span>
+                                </button>
+
+                                <div className="flex items-center gap-2">
+                                    <span className="text-sm text-gray-600">Page</span>
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        max={totalPages}
+                                        value={currentPage}
+                                        onChange={(e) => handlePageInput(parseInt(e.target.value) || 1)}
+                                        className="w-12 px-2 py-1 border border-gray-300 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-[#00796b]"
+                                    />
+                                    <span className="text-sm text-gray-600">of {totalPages}</span>
+                                </div>
+
+                                <button
+                                    onClick={handleNextPage}
+                                    disabled={currentPage >= totalPages || loading}
+                                    className="p-2 rounded-lg border border-gray-300 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                    title="Next page"
+                                >
+                                    <span className="material-symbols-outlined">chevron_right</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {loading && (
                     <div className="bg-white rounded-lg shadow-lg p-12 text-center mt-6">
