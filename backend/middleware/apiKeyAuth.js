@@ -70,6 +70,7 @@ const verifyAPIKey = (requiredPermission) => {
             req.company_id = key.company_id;
             req.apiKeyId = key.id;
             req.apiKeyName = key.name;
+            req.apiKeyCreatedBy = key.created_by; // Track who created this API key
 
             // Capture start time for duration measurement
             const startHr = process.hrtime.bigint();

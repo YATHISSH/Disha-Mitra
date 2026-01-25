@@ -34,9 +34,12 @@ const startChatSession = async (req, res) => {
 const sendChatMessage = async (req, res) => {
     try {
         const rawMessage = (req.body.userMessage ?? req.body.message);
-        const userId = (req.user?.id) || req.body.userId || 0;
+        // For JWT: use req.user.id; for API key: use req.apiKeyCreatedBy (the user who created the API key)
+        const userId = req.user?.id || req.apiKeyCreatedBy || null;
         const companyId = (req.user?.company_id) || req.company_id;
+        // For API key requests without sessionId, use session_id = 0 (reserved for API chats)
         let sessionId = req.body.sessionId;
+        const isApiKeyRequest = !req.user && req.company_id;
 
         if (!rawMessage || !rawMessage.trim()) {
             await recordActivity(req, { action: 'CHAT_SEND', resource: '/issue/chat', result: 400, metadata: { reason: 'missing_message' } });
@@ -49,11 +52,32 @@ const sendChatMessage = async (req, res) => {
             return res.status(401).json({ error: 'Company ID is required' });
         }
 
-        // Create a session if missing
+        // Create or use session
         if (!sessionId) {
-            const session = new ChatSession({ company_id: companyId, user_id: userId, title: 'New Session' });
-            await session.save();
-            sessionId = session.id;
+            if (isApiKeyRequest) {
+                // For API key requests, use session_id = 0 (reserved for API chats)
+                sessionId = 0;
+                // Ensure session 0 exists for this company
+                const existingSession = await ChatSession.findOne({ id: 0, company_id: companyId });
+                if (!existingSession) {
+                    const session = new ChatSession({ 
+                        id: 0,
+                        company_id: companyId, 
+                        user_id: null, 
+                        title: 'API Chat Session' 
+                    });
+                    await session.save();
+                }
+            } else {
+                // For app users, create a new session
+                const session = new ChatSession({ 
+                    company_id: companyId, 
+                    user_id: userId, 
+                    title: 'New Session' 
+                });
+                await session.save();
+                sessionId = session.id;
+            }
         }
 
         // Call Python API to get bot response
@@ -76,10 +100,13 @@ const sendChatMessage = async (req, res) => {
 
         await chatEntry.save();
         // Update session last activity
-        await ChatSession.findOneAndUpdate({ id: sessionId, company_id: companyId, user_id: userId }, { $set: { last_activity: new Date() } });
+        await ChatSession.findOneAndUpdate(
+            { id: sessionId, company_id: companyId }, 
+            { $set: { last_activity: new Date() } }
+        );
 
         // Send response back to frontend
-        await recordActivity(req, { action: 'CHAT_SEND', resource: '/issue/chat', result: 200, metadata: { chatId: chatEntry.id } });
+        await recordActivity(req, { action: 'CHAT_SEND', resource: '/issue/chat', result: 200, metadata: { chatId: chatEntry.id, sessionId, isApiKey: isApiKeyRequest } });
 
         res.status(200).json({
             message: 'Chat processed successfully',

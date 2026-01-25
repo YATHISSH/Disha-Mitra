@@ -17,5 +17,6 @@ const upload = multer({
 router.post('/upload', verifyAPIKey('upload'), upload.single('file'), documentController.uploadDocument);
 router.post('/chat', verifyAPIKey('chat'), sendChatMessage);
 router.get('/documents', verifyAPIKey('search'), documentController.listDocuments);
+router.delete('/documents/:documentId', verifyAPIKey('delete'), documentController.deleteDocument);
 
 module.exports = router;

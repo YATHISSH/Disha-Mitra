@@ -178,7 +178,12 @@ const listDocuments = async (req, res) => {
 const deleteDocument = async (req, res) => {
     try {
         const { documentId } = req.params;
-        const companyId = req.user.company_id;
+        // Support both JWT token (req.user) and API key (req.company_id) authentication
+        const companyId = req.user?.company_id || req.company_id;
+
+        if (!companyId) {
+            return res.status(401).json({ error: 'Company ID not found in token or API key' });
+        }
 
         const document = await Document.findById(documentId);
         if (!document) {

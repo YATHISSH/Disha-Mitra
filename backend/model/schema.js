@@ -114,7 +114,7 @@ roleSchema.pre('save', async function(next) {
 const chatHistorySchema = mongoose.Schema({
     id: { type: Number, unique: true, sparse: true },
     company_id: { type: Number, required: true },
-    user_id: { type: Number, required: true },
+    user_id: { type: Number, default: null },
     session_id: { type: Number, required: true },
     userMessage: { type: String, required: true },
     botResponse: { type: String, required: true },
@@ -227,7 +227,7 @@ module.exports.activityLogSchema = activityLogSchema;
 const chatSessionSchema = mongoose.Schema({
     id: { type: Number, unique: true, sparse: true },
     company_id: { type: Number, required: true },
-    user_id: { type: Number, required: true },
+    user_id: { type: Number, default: null },
     title: { type: String, default: 'New Session' },
     created_at: { type: Date, default: Date.now },
     last_activity: { type: Date, default: Date.now }
