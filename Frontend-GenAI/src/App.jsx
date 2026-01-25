@@ -23,6 +23,7 @@ import APIManagement from "./components/Sidebar/APIManagement";
 import UserManagement from "./components/Sidebar/UserManagement";
 import SystemSettings from "./components/Sidebar/Settings"; // Renamed from Settings
 import AuditLogs from "./components/Sidebar/AuditLogs";
+import APIDocumentation from "./components/Docs/APIDocumentation";
 
 // import Assessment from "./Assesment";
 
@@ -154,6 +155,11 @@ function App() {
               </div>
             </div>
           }
+        />
+
+        <Route
+          path="/docs/api"
+          element={<APIDocumentation />}
         />
 
         <Route

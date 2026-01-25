@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { createAPIKey, listAPIKeys, revokeAPIKey, regenerateAPIKey, getAPIUsageAnalytics } from '../../api';
 
 const APIManagement = () => {
+    const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('overview');
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showKeyModal, setShowKeyModal] = useState(false);
@@ -142,6 +144,13 @@ const APIManagement = () => {
                         >
                             <span className="material-symbols-outlined">add</span>
                             Create API Key
+                        </button>
+                        <button 
+                            onClick={() => navigate('/docs/api')}
+                            className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors duration-200 flex items-center gap-2"
+                        >
+                            <span className="material-symbols-outlined">description</span>
+                            View Docs
                         </button>
                     </div>
                 </div>
