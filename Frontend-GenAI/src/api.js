@@ -70,10 +70,11 @@ export const sendPrompt = async (prompt) => {
 };
 
 // Chat API - calls backend endpoint which stores history and calls Python API
-export const sendChat = async (userMessage) => {
+export const sendChat = async (userMessage, sessionId) => {
     try {
         const response = await axios.post(`${BACKEND_URL}/issue/chat`, {
-            userMessage
+            userMessage,
+            sessionId
         }, {
             headers: getAuthHeaders()
         });
@@ -355,6 +356,43 @@ export const getAPIUsageAnalytics = async (period = '24h', keyId = null) => {
         return response.data.data;
     } catch (error) {
         console.error('Error fetching API usage analytics:', error);
+        throw error;
+    }
+};
+
+// Chat Sessions APIs
+export const startChatSession = async (title = 'New Session') => {
+    try {
+        const response = await axios.post(`${BACKEND_URL}/issue/chat/session/start`, { title }, {
+            headers: getAuthHeaders()
+        });
+        return response.data; // { success, sessionId, title }
+    } catch (error) {
+        console.error('Error starting chat session:', error);
+        throw error;
+    }
+};
+
+export const getChatSessions = async () => {
+    try {
+        const response = await axios.get(`${BACKEND_URL}/issue/chat/sessions`, {
+            headers: getAuthHeaders()
+        });
+        return response.data.sessions || [];
+    } catch (error) {
+        console.error('Error fetching chat sessions:', error);
+        throw error;
+    }
+};
+
+export const getSessionMessages = async (sessionId) => {
+    try {
+        const response = await axios.get(`${BACKEND_URL}/issue/chat/session/${sessionId}`, {
+            headers: getAuthHeaders()
+        });
+        return response.data.messages || [];
+    } catch (error) {
+        console.error('Error fetching session messages:', error);
         throw error;
     }
 };

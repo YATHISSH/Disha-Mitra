@@ -58,6 +58,19 @@ function App() {
           }
         />
 
+        {/* Session-specific Chatbot Route */}
+        <Route
+          path="/chatbot/:sessionId"
+          element={
+            <div className="flex h-screen">
+              <Sidebar />
+              <div className="flex-1 overflow-y-auto">
+                <Main />
+              </div>
+            </div>
+          }
+        />
+
         {/* Enterprise Feature Routes with Sidebar */}
         <Route
           path="/document-library"

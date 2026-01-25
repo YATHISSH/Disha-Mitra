@@ -1,5 +1,5 @@
 import { createContext, useState } from "react";
-import { sendPrompt } from "../api";
+import { sendChat, startChatSession } from "../api";
 import PropTypes from 'prop-types';
 
 export const Context = createContext();
@@ -13,6 +13,7 @@ const ContextProvider = (props) => {
     const [loading, setLoading] = useState(false);
     const [resultData, setResultData] = useState("");
     const [themeColor, setThemeColor] = useState("#e9f1f7");
+    const [currentSessionId, setCurrentSessionId] = useState(null);
     
     // User Profile State
     const [userProfile, setUserProfile] = useState({
@@ -61,6 +62,23 @@ const ContextProvider = (props) => {
         setResultData("");
         setInput("");
         setThemeColor("#f4ece1");
+        setCurrentSessionId(null);
+    };
+
+    const startNewSession = async (title = 'New Session') => {
+        try {
+            const res = await startChatSession(title);
+            if (res?.success) {
+                setCurrentSessionId(res.sessionId);
+                setShowResult(false);
+                setRecentPrompt("");
+                setResultData("");
+                setInput("");
+                setThemeColor("#f4ece1");
+            }
+        } catch (err) {
+            console.error('Failed to start chat session:', err);
+        }
     };
 
     const onSent = async (prompt) => {
@@ -68,13 +86,22 @@ const ContextProvider = (props) => {
         setLoading(true);
         setShowResult(true);
         let response;
+        // Ensure a session exists
+        if (!currentSessionId) {
+            try {
+                const res = await startChatSession('New Session');
+                if (res?.success) setCurrentSessionId(res.sessionId);
+            } catch (e) {
+                console.error('Auto-start session failed:', e);
+            }
+        }
         if (prompt !== undefined) {
-            response = await sendPrompt(prompt);
+            response = await sendChat(prompt, currentSessionId);
             setRecentPrompt(prompt);
         } else {
             setPrevPrompts(prev => [...prev, input]);
             setRecentPrompt(input);
-            response = await sendPrompt(input);
+            response = await sendChat(input, currentSessionId);
         }
 
         let responseArray = response.split("**");
@@ -131,6 +158,9 @@ const ContextProvider = (props) => {
         input,
         setInput,
         newChat,
+        startNewSession,
+        currentSessionId,
+        setCurrentSessionId,
         themeColor,
         userProfile,
         updateUserProfile,

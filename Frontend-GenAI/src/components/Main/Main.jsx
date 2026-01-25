@@ -3,9 +3,9 @@
 import { useContext, useState, useEffect, useRef } from 'react';
 import { assets } from '../../assets/assets';
 import { Context } from '../../context/Context';
-import { Link } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import Tesseract from 'tesseract.js';
-import { sendChat } from '../../api';
+import { sendChat, getSessionMessages } from '../../api';
 
 const shuffleArray = (array) => {
     let currentIndex = array.length, randomIndex;
@@ -20,7 +20,8 @@ const shuffleArray = (array) => {
 };
 
 const Main = () => {
-    const { showResult, loading, setInput, input, themeColor } = useContext(Context);
+    const { sessionId } = useParams(); // Get session_id from URL
+    const { showResult, loading, setInput, input, themeColor, setCurrentSessionId, currentSessionId } = useContext(Context);
     const [shareOpen, setShareOpen] = useState(false);
     const lastMessageRef = useRef(null);
     const inputRef = useRef(null);
@@ -85,6 +86,34 @@ const Main = () => {
             setIsSending(false);
         }
     }, [loading]);
+
+    // Set session_id from URL parameter and load existing messages
+    useEffect(() => {
+        const loadSession = async () => {
+            if (sessionId) {
+                const sessionIdNum = parseInt(sessionId);
+                setCurrentSessionId(sessionIdNum);
+                
+                // Load existing messages from this session
+                try {
+                    const sessionMessages = await getSessionMessages(sessionIdNum);
+                    if (sessionMessages && sessionMessages.length > 0) {
+                        // Convert session messages to local message format
+                        const formattedMessages = [];
+                        sessionMessages.forEach(msg => {
+                            formattedMessages.push({ sender: 'user', text: msg.userMessage });
+                            formattedMessages.push({ sender: 'bot', text: msg.botResponse });
+                        });
+                        setMessages(formattedMessages);
+                        setHasStartedChatting(true);
+                    }
+                } catch (error) {
+                    console.error('Error loading session messages:', error);
+                }
+            }
+        };
+        loadSession();
+    }, [sessionId]);
 
     useEffect(() => {
         if ('webkitSpeechRecognition' in window) {
@@ -173,7 +202,7 @@ const Main = () => {
         setMessageSent(true);
         
         try {
-            const botResponse = await sendChat(message);
+            const botResponse = await sendChat(message, currentSessionId);
             console.log(botResponse);
 
             simulateTyping(botResponse);

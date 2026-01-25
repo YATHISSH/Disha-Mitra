@@ -6,7 +6,7 @@ import axios from 'axios';
 
 const Sidebar = () => {
     // Retrieve user information from the context
-    const { newChat, prevPrompts, chatHistory, username: contextUsername } = useContext(Context);
+    const { newChat, startNewSession, prevPrompts, chatHistory, username: contextUsername } = useContext(Context);
     const [extended, setExtended] = useState(false);
     const [username, setUsername] = useState(localStorage.getItem('username') || contextUsername || '');
     const navigate = useNavigate();
@@ -87,7 +87,13 @@ const Sidebar = () => {
 
                     {/* New Chat Button */}
                     <button
-                        onClick={newChat} 
+                        onClick={async () => {
+                            try {
+                                await startNewSession('New Session');
+                            } catch (err) {
+                                console.error('Failed to start new session:', err);
+                            }
+                        }} 
                         className="font-bold text-sm flex items-center gap-2 p-3 bg-[#197e71] rounded-full cursor-pointer hover:bg-[#27719e] transition-colors duration-200"
                     >
                         <img src={assets.plus_icon} alt="new chat" className="w-5" />
