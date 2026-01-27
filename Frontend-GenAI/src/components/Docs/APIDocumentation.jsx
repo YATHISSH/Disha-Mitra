@@ -1,3 +1,4 @@
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 import { useNavigate } from 'react-router-dom';
 
 const APIDocumentation = () => {
@@ -26,7 +27,7 @@ const APIDocumentation = () => {
                 chatId: 10,
                 sessionId: 0
             },
-            example: `curl -X POST http://localhost:3001/api/v1/chat \\
+            example: `curl -X POST ${BACKEND_URL}/api/v1/chat \\
   -H "X-API-Key: your_api_key_here" \\
   -H "Content-Type: application/json" \\
   -d '{"message": "What is the company policy?", "sessionId": 0}'`
@@ -51,7 +52,7 @@ const APIDocumentation = () => {
                     url: 'https://...'
                 }
             },
-            example: `curl -X POST http://localhost:3001/api/v1/upload \\
+            example: `curl -X POST ${BACKEND_URL}/api/v1/upload \\
   -H "X-API-Key: your_api_key_here" \\
   -F "file=@document.pdf" \\
   -F "category=policies"`
@@ -76,7 +77,7 @@ const APIDocumentation = () => {
                 documents: [],
                 count: 5
             },
-            example: `curl -X GET "http://localhost:3001/api/v1/documents?category=policies" \\
+            example: `curl -X GET "${BACKEND_URL}/api/v1/documents?category=policies" \\
   -H "X-API-Key: your_api_key_here"`
         },
         {
@@ -96,7 +97,7 @@ const APIDocumentation = () => {
             response: {
                 message: 'Document deleted successfully'
             },
-            example: `curl -X DELETE http://localhost:3001/api/v1/documents/65a1b2c3d4e5f6g7h8i9j0k1 \\
+            example: `curl -X DELETE ${BACKEND_URL}/api/v1/documents/65a1b2c3d4e5f6g7h8i9j0k1 \\
   -H "X-API-Key: your_api_key_here"`
         }
     ];
@@ -165,7 +166,7 @@ const APIDocumentation = () => {
                         <div>
                             <h3 className="font-semibold text-gray-800 mb-2">3. Make Your First Request</h3>
                             <pre className="bg-gray-900 text-green-400 p-4 rounded overflow-x-auto text-sm">
-{`curl -X POST http://localhost:3001/api/v1/chat \\
+{`curl -X POST ${BACKEND_URL}/api/v1/chat \\
   -H "X-API-Key: your_api_key" \\
   -H "Content-Type: application/json" \\
   -d '{"message": "Hello"}'`}

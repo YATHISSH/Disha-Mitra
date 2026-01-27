@@ -1,3 +1,4 @@
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createAPIKey, listAPIKeys, revokeAPIKey, regenerateAPIKey, getAPIUsageAnalytics } from '../../api';
@@ -308,7 +309,7 @@ const APIManagement = () => {
                     <div className="bg-gray-50 p-4 rounded-lg">
                         <p className="text-sm text-gray-600 mb-3">Example: Chat with AI using your API key</p>
                         <pre className="bg-gray-900 text-green-400 p-4 rounded overflow-x-auto text-sm">
-{`curl -X POST http://localhost:3001/api/v1/chat \\
+{`curl -X POST ${BACKEND_URL}/api/v1/chat \\
   -H "X-API-Key: your_api_key_here" \\
   -H "Content-Type: application/json" \\
   -d '{"message": "What is the company policy?"}'`}
