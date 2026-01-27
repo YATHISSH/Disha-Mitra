@@ -219,21 +219,6 @@ def process_document(document_path, namespace: str = None, company_id: int = Non
     
     print(f"[UPLOAD] Document processed and upserted {len(vectors)} chunks to Pinecone.")
 
-def generate_summary(ans):
-    """Generate a summary using Gemini."""
-    summary_prompt = (
-        "You are Vantum AI, a helpful educational and informational assistant. "
-        "Summarize and explain the following information clearly and politely. "
-        "Always use simple language so that high school students, parents, or non-technical people can easily understand. "
-        f"Information to summarize: {ans}"
-    )
-    
-    resp = genai_client.models.generate_content(
-        model=CHAT_MODEL,
-        contents=summary_prompt
-    )
-    return resp.text.strip()
-
 
 def process_prompt(prompt: str, top_k: int = 4, namespace: str = None,
                    company_id: int = None) -> str:

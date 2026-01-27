@@ -1,8 +1,17 @@
- import axios from 'axios';
 
-const API_URL = 'http://localhost:8000/api/chat';  // Ensure this is the correct URL of your FastAPI server
-// const BACKEND_URL = 'https://disha-mitra-0elc.onrender.com';
-const BACKEND_URL = 'http://localhost:3001';
+import axios from 'axios';
+
+console.log("MODE:", import.meta.env.MODE);
+console.log("BACKEND:", import.meta.env.VITE_BACKEND_URL);
+
+
+// Load URLs from .env (Vite exposes variables as import.meta.env)
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+
+if (!BACKEND_URL) {
+  throw new Error("VITE_BACKEND_URL missing in environment");
+}
+
 
 // Get JWT token from localStorage
 const getAuthHeaders = () => {
