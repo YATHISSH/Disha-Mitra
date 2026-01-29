@@ -50,10 +50,18 @@ const Sidebar = () => {
         setExtended((prev) => !prev);
     };
 
+    const { updateUsername, setuseremail } = useContext(Context);
     const handleLogout = () => {
+        // Remove all user-related data from localStorage
         localStorage.removeItem('username');
+        localStorage.removeItem('token');
+        // Clear context values
         setUsername('');
-        navigate('/');
+        updateUsername('');
+        setuseremail('');
+        // Navigate to login and reload to clear all cached state
+        navigate('/login');
+        setTimeout(() => window.location.reload(), 100);
     };
 
     // Function to handle navigation and close sidebar
