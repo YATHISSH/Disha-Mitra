@@ -32,7 +32,7 @@ function App() {
     <Router>
       <Routes>
         {/* Public Routes */}
-        <Route path="/" element={<Login />} />
+        <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         {/* <Route path="/userdata" element={<UserData />} /> */}
         <Route path="/userprofile" element={<UserProfile />} />
@@ -48,7 +48,7 @@ function App() {
 
         {/* Main Chatbot Route with Sidebar */}
         <Route
-          path="/chatbot"
+          path="/"
           element={
             <div className="flex h-screen">
               <Sidebar />
@@ -61,7 +61,7 @@ function App() {
 
         {/* Session-specific Chatbot Route */}
         <Route
-          path="/chatbot/:sessionId"
+          path="/:sessionId"
           element={
             <div className="flex h-screen">
               <Sidebar />

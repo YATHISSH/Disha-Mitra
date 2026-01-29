@@ -88,8 +88,18 @@ const Sidebar = () => {
                     {/* New Chat Button */}
                     <button
                         onClick={async () => {
+                            // Prevent new session if current session is empty (no messages)
+                            const main = document.querySelector('.flex-1.max-w-[900px]');
+                            const hasMessages = main && main.querySelectorAll('.flex.items-start').length > 0;
+                            if (!hasMessages) {
+                                alert('Please send a message before starting a new session.');
+                                return;
+                            }
                             try {
-                                await startNewSession('New Session');
+                                const sessionId = await startNewSession('New Session');
+                                if (sessionId) {
+                                    navigate(`/${sessionId}`);
+                                }
                             } catch (err) {
                                 console.error('Failed to start new session:', err);
                             }

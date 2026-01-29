@@ -54,7 +54,7 @@ const Login = () => {
           
           updateUsername(userData.user.name); // Update context with the username
           console.log('User logged in successfully');
-          navigate('/chatbot'); // Redirect to UserData page
+          navigate('/'); // Redirect to UserData page
 
         }
       } catch (error) {

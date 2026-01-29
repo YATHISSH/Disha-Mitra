@@ -89,11 +89,14 @@ const Main = () => {
 
     // Set session_id from URL parameter and load existing messages
     useEffect(() => {
+        // Always clear messages and show cards when sessionId changes (new session)
+        setMessages([]);
+        setHasStartedChatting(false);
+        setShowCards(true);
         const loadSession = async () => {
             if (sessionId) {
                 const sessionIdNum = parseInt(sessionId);
                 setCurrentSessionId(sessionIdNum);
-                
                 // Load existing messages from this session
                 try {
                     const sessionMessages = await getSessionMessages(sessionIdNum);
@@ -106,6 +109,7 @@ const Main = () => {
                         });
                         setMessages(formattedMessages);
                         setHasStartedChatting(true);
+                        setShowCards(false);
                     }
                 } catch (error) {
                     console.error('Error loading session messages:', error);
@@ -194,23 +198,20 @@ const Main = () => {
     const sendMessage = async (message) => {
         if (!hasStartedChatting) {
             setHasStartedChatting(true);
+            setShowCards(false);
         }
-    
         setMessages((prevMessages) => [...prevMessages, { sender: 'user', text: message }]);
         setIsSending(true);
         setInput('');
         setMessageSent(true);
-        
         try {
             const botResponse = await sendChat(message, currentSessionId);
             console.log(botResponse);
-
             simulateTyping(botResponse);
         } catch (error) {
             console.error('Error sending message to server:', error);
             setIsSending(false);
         }
-        
         updateSuggestions();
         setShowSuggestions(true);
     };

@@ -75,10 +75,13 @@ const ContextProvider = (props) => {
                 setResultData("");
                 setInput("");
                 setThemeColor("#f4ece1");
+                setChatHistory([]); // Clear chat history for new session
+                return res.sessionId;
             }
         } catch (err) {
             console.error('Failed to start chat session:', err);
         }
+        return null;
     };
 
     const onSent = async (prompt) => {
