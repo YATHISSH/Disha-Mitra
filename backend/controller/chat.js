@@ -3,7 +3,7 @@ const { ChatHistory, ChatSession } = require('../model/collection');
 const { getNextId } = require('../model/counter');
 const { recordActivity } = require('../utils/auditLogger');
 
-const PYTHON_API_URL = process.env.PYTHON_API_URL || 'http://localhost:8000/api/chat';
+const PYTHON_API_URL = process.env.PYTHON_API_URL || 'http://localhost:8000';
 
 // Send chat message and store in history
 // Explicit session creation
@@ -81,11 +81,13 @@ const sendChatMessage = async (req, res) => {
         }
 
         // Call Python API to get bot response
-        const pythonResponse = await axios.post(PYTHON_API_URL, {
+        const pythonResponse = await axios.post(`${PYTHON_API_URL}/api/chat`, {
             userMessage: userMessage,
             companyId: companyId,
             userId: userId
         });
+
+        console.log('Python API response:', pythonResponse.data);
 
         const botResponse = pythonResponse.data.botResponse || 'Sorry, I could not process your request.';
 

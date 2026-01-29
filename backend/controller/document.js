@@ -16,8 +16,9 @@ cloudinary.config({
 const Document = mongoose.model('Document', documentSchema);
 
 // Python microservice URLs
-const PYTHON_API_URL = 'http://localhost:8000/process-document';
-const PYTHON_DELETE_URL = 'http://localhost:8000/delete-document';
+const PYTHON_API_URL = process.env.PYTHON_API_URL || 'http://localhost:8000';
+const PYTHON_PROCESS_URL = `${PYTHON_API_URL}/process-document`;
+const PYTHON_DELETE_URL = `${PYTHON_API_URL}/delete-document`;
 
 // Upload Document
 const uploadDocument = async (req, res) => {
@@ -123,7 +124,7 @@ const processDocumentForPinecone = async (documentUrl, companyId, userId, pdfId,
         if (category) formData.append('category', category);
 
         const response = await axios.post(
-            PYTHON_API_URL,
+            PYTHON_PROCESS_URL,
             formData,
             {
                 headers: {
